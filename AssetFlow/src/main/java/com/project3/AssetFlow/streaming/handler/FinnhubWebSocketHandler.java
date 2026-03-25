@@ -21,9 +21,12 @@ public class FinnhubWebSocketHandler extends TextWebSocketHandler {
 
     private MarketDataService marketDataService;
 
-    public FinnhubWebSocketHandler(ObjectMapper objectMapper, SubscribeData subscribeData) {
+    public FinnhubWebSocketHandler(ObjectMapper objectMapper,
+                                   SubscribeData subscribeData,
+                                   MarketDataService marketDataService) {
         this.objectMapper = objectMapper;
         this.subscribeData = subscribeData;
+        this.marketDataService = marketDataService;
     }
 
     @Override
@@ -33,7 +36,6 @@ public class FinnhubWebSocketHandler extends TextWebSocketHandler {
             FinnhubRequest request = new FinnhubRequest("subscribe", ticker);
             String jsonMessage = objectMapper.writeValueAsString(request);
             session.sendMessage(new TextMessage(jsonMessage));
-            System.out.println("Sent message: " + jsonMessage);
         }
     }
 
@@ -43,7 +45,7 @@ public class FinnhubWebSocketHandler extends TextWebSocketHandler {
         FinnhubResponse response = objectMapper.readValue(payload, FinnhubResponse.class);
 
         if("trade".equals(response.type()) && response.type() != null) {
-            //marketDataService.processTrades(response.data());
+            marketDataService.processTrades(response.data());
             System.out.println("Received message: " + payload);
         }
     }
