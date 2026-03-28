@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Table(name="prices")
@@ -27,9 +28,9 @@ public class Price {
     private BigDecimal price;
 
     @Column(name="recorded_at")
-    private Long recordedAt;
+    private Instant recordedAt;
 
-    public Price(Asset asset, Currency currency, BigDecimal price, Long recordedAt) {
+    public Price(Asset asset, Currency currency, BigDecimal price, Instant recordedAt) {
         this.asset = asset;
         this.currency = currency;
         this.price = price;

@@ -7,8 +7,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Optional;
 
 @Service
 public class MarketDataService {
@@ -25,6 +25,7 @@ public class MarketDataService {
         this.messagingTemplate = messagingTemplate;
     }
 
+    @Transactional
     public void processTrades(FinnHubTrade[] trades)
     {
         Arrays.stream(trades).forEach(trade -> {
@@ -32,16 +33,23 @@ public class MarketDataService {
 
             Asset asset = assetRepository.findByTicker(trade.ticker());
 
-            if (asset != null) {
-                Price price = new Price();
-                price.setAsset(asset);
-                price.setPrice(trade.price());
-                price.setRecordedAt(trade.timestamp());
-                priceRepository.save(price);
-
-                messagingTemplate.convertAndSend("/topic/market" + trade.ticker(),
-                                                    new MarketUpdateDTO(trade.ticker(), price.getPrice()));
+            if (asset == null) {
+                asset = new Asset();
+                asset.setTicker(trade.ticker());
+                asset = assetRepository.save(asset); // Reassign to get the auto-generated ID
+                System.out.println("Created new asset in database: " + trade.ticker());
             }
+
+            Instant timestamp = Instant.ofEpochMilli(trade.timestamp());
+
+            Price price = new Price();
+            price.setAsset(asset);
+            price.setPrice(trade.price());
+            price.setRecordedAt(timestamp);
+            priceRepository.save(price);
+
+            messagingTemplate.convertAndSend("/topic/market" + trade.ticker(),
+                                                new MarketUpdateDTO(trade.ticker(), price.getPrice()));
         });
     }
 }
