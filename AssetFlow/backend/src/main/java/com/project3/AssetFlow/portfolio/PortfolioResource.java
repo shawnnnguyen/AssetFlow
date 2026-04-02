@@ -10,6 +10,6 @@ import java.util.List;
 @RestController
 @AllArgsConstructor
 public class PortfolioResource {
-    @Autowired
+
     private final PortfolioService portfolioService;
 }

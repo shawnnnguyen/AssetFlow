@@ -1,4 +1,6 @@
 package com.project3.AssetFlow.identity;
 
-public interface UserRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
 }

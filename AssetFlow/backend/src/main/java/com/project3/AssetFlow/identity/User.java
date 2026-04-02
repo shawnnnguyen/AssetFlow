@@ -15,6 +15,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="id")
     private Long id;
 
     @Column(unique = true, nullable = false, length = 50)
@@ -26,8 +27,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @OneToOne
-    @JoinColumn(name = "portfolio_id")
+    @OneToOne(mappedBy = "user")
     private Portfolio portfolio;
 
     private boolean enabled = true;

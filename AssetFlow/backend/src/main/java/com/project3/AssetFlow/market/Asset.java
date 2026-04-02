@@ -1,15 +1,15 @@
 package com.project3.AssetFlow.market;
 
-import com.project3.AssetFlow.portfolio.AssetType;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
-@NoArgsConstructor
+@Getter
+@Setter
+@RequiredArgsConstructor
 @Table(name="assets")
 public class Asset {
     @Id
@@ -25,13 +25,9 @@ public class Asset {
     @Column(name="country")
     private String country;
 
-    @Column(name="asset_type")
-    private AssetType assetType;
+    @Column(name="industry")
+    private String industry;
 
-    public Asset(String ticker, String assetName,String country, AssetType assetType) {
-        this.ticker = ticker;
-        this.assetName = assetName;
-        this.country = country;
-        this.assetType = assetType;
-    }
+    @Column(name="currency_code")
+    private String currency;
 }
