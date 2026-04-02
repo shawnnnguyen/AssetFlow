@@ -18,7 +18,7 @@ public class FrontendWebSocketConfig implements WebSocketMessageBrokerConfigurer
     @Override
     public void registerStompEndpoints(org.springframework.web.socket.config.annotation.StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-market")
-                .setAllowedOrigins("*")
+                .setAllowedOrigins("http://localhost:3000")
                 .withSockJS();
     }
 }
