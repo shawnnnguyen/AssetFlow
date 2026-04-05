@@ -9,10 +9,9 @@ public class FinnhubClient {
 
     private RestClient restClient;
 
-    public FinnhubClient(RestClient.Builder builder,
-                         @Value("${app.finnhub.http-method.base-url}") String baseUrl,
+    public FinnhubClient(@Value("${app.finnhub.http-method.base-url}") String baseUrl,
                          @Value("${app.finnhub.api-key}") String apiKey) {
-        this.restClient = builder
+        this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Finnhub-Token", apiKey)
                 .build();

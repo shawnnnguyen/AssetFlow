@@ -3,13 +3,12 @@ package com.project3.AssetFlow.market;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
 @Table(name="assets")
 public class Asset {
     @Id

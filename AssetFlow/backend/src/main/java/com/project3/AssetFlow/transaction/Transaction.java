@@ -37,7 +37,6 @@ public class Transaction {
     @Column(name="execution_time")
     private LocalDateTime executionTime;
 
-    @Enumerated(EnumType.STRING)
     @Column(name="type")
     private TransactionType type;
 

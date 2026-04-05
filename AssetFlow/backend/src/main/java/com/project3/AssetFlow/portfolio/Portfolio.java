@@ -1,10 +1,8 @@
 package com.project3.AssetFlow.portfolio;
 
-import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.market.Currency;
 import com.project3.AssetFlow.identity.User;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

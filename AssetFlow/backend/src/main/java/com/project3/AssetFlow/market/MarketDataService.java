@@ -5,6 +5,7 @@ import com.project3.AssetFlow.market.dto.FinnhubClient;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.streaming.dto.FinnHubTrade;
 import com.project3.AssetFlow.streaming.dto.MarketUpdateDTO;
+import com.project3.AssetFlow.streaming.handler.FinnhubSubscriptionManager;
 import com.project3.AssetFlow.streaming.handler.FinnhubWebSocketHandler;
 import jakarta.annotation.PostConstruct;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,7 +24,7 @@ public class MarketDataService {
     private final AssetRepository assetRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final FinnhubClient finnhubClient;
-    private final FinnhubWebSocketHandler handler;
+    private final FinnhubSubscriptionManager subscriptionManager;
 
     private final Map<String, TrackedStocksDTO> liveCache = new ConcurrentHashMap<>();
 
@@ -30,12 +32,12 @@ public class MarketDataService {
                              AssetRepository assetRepository,
                              SimpMessagingTemplate messagingTemplate,
                              FinnhubClient finnhubClient,
-                             FinnhubWebSocketHandler handler) {
+                             FinnhubSubscriptionManager subscriptionManager) {
         this.priceRepository = priceRepository;
         this.assetRepository = assetRepository;
         this.messagingTemplate = messagingTemplate;
         this.finnhubClient = finnhubClient;
-        this.handler = handler;
+        this.subscriptionManager = subscriptionManager;
     }
 
     @PostConstruct
@@ -63,31 +65,36 @@ public class MarketDataService {
 
                 Price newPrice = new Price();
                 newPrice.setPrice(trade.price());
+                newPrice.setRecordedAt(Instant.ofEpochMilli(trade.timestamp()));
 
                 Asset assetRef = new Asset();
                 assetRef.setId(cachedStock.assetId());
                 newPrice.setAsset(assetRef);
 
                 pricesToSave.add(newPrice);
+
+                messagingTemplate.convertAndSend("/topic/market/" + ticker,
+                        new MarketUpdateDTO(ticker, trade.price()));
             }
-            messagingTemplate.convertAndSend("/topic/market/" + ticker,
-                    new MarketUpdateDTO(ticker, trade.price()));
         }
         if (!pricesToSave.isEmpty()) priceRepository.saveAll(pricesToSave);
     }
 
-    public boolean getCompanyProfile (String ticker) {
+    public TrackingResult getCompanyProfile (String ticker) {
        AssetInfoDTO companyProfile = finnhubClient.getCompanyProfile(ticker);
 
-       return companyProfile != null;
+       if(companyProfile == null) return TrackingResult.NOT_FOUND;
+       if(liveCache.containsKey(ticker)) return TrackingResult.ALREADY_TRACKED;
+
+       return TrackingResult.FOUND;
     }
 
     @Transactional
-    public boolean addStockToTracking(String ticker) {
-        if(liveCache.containsKey(ticker)) return true;
+    public TrackingResult addStockToTracking(String ticker) {
+        if(liveCache.containsKey(ticker)) return TrackingResult.ALREADY_TRACKED;
 
         AssetInfoDTO profile = finnhubClient.getCompanyProfile(ticker);
-        if(profile == null) return false;
+        if(profile == null) return TrackingResult.NOT_FOUND;
 
         Asset asset = assetRepository.findByTicker(ticker)
                 .orElseGet(() -> {
@@ -105,19 +112,19 @@ public class MarketDataService {
                 BigDecimal.ZERO
         ));
 
-        handler.subscribeToTicker(ticker);
-        return true;
+        subscriptionManager.subscribeToTicker(ticker);
+        return TrackingResult.ADDED;
     }
 
-    public boolean removeStockFromTracking(String ticker) {
-        if (ticker == null || ticker.isBlank()) return false;
+    public TrackingResult removeStockFromTracking(String ticker) {
+        if (ticker == null || ticker.isBlank()) return TrackingResult.NOT_FOUND;
 
         if(liveCache.containsKey(ticker)) {
             liveCache.remove(ticker);
-            handler.unsubscribeFromTicker(ticker);
-            return true;
+            subscriptionManager.unsubscribeFromTicker(ticker);
+            return TrackingResult.NOT_TRACKED;
         }
-        return false;
+        return TrackingResult.NOT_FOUND;
     }
 
     public List<TrackedStocksDTO> getAllTrackedStocks() {

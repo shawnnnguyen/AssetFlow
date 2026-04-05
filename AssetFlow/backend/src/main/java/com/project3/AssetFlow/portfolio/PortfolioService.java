@@ -1,6 +1,5 @@
 package com.project3.AssetFlow.portfolio;
 
-import com.project3.AssetFlow.transaction.TransactionType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,7 @@ public class PortfolioService {
     }
 
     @Transactional
-    public void executeTrade(Long portfolioId, Long assetId, BigDecimal quantity, TransactionType type) {
+    public void executeTrade(Long portfolioId, Long assetId, BigDecimal quantity, String type) {
         // 1. Fetch Portfolio and Asset Price
         // 2. If BUY: Check if (price * quantity) <= cashBalance
         // 3. If SELL: Check if holdings contains enough quantity
