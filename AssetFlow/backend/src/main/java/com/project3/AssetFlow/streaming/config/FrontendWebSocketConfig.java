@@ -1,4 +1,4 @@
-package com.project3.AssetFlow.streaming.handler;
+package com.project3.AssetFlow.streaming.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -18,6 +18,7 @@ public class FrontendWebSocketConfig implements WebSocketMessageBrokerConfigurer
     @Override
     public void registerStompEndpoints(org.springframework.web.socket.config.annotation.StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-market")
+                .setAllowedOrigins("http://localhost:3000")
                 .withSockJS();
     }
 }

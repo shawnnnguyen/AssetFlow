@@ -20,19 +20,14 @@ public class Price {
     @JoinColumn(name="asset_id")
     private Asset asset;
 
-    @ManyToOne
-    @JoinColumn(name="currency_code")
-    private Currency currency;
-
     @Column(name="price")
     private BigDecimal price;
 
     @Column(name="recorded_at")
     private Instant recordedAt;
 
-    public Price(Asset asset, Currency currency, BigDecimal price, Instant recordedAt) {
+    public Price(Asset asset, BigDecimal price, Instant recordedAt) {
         this.asset = asset;
-        this.currency = currency;
         this.price = price;
         this.recordedAt = recordedAt;
     }

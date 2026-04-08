@@ -2,14 +2,16 @@ package com.project3.AssetFlow.portfolio;
 
 import com.project3.AssetFlow.market.Asset;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name="holdings")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Holding {
     @Id

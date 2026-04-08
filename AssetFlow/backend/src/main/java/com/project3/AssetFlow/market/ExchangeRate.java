@@ -1,14 +1,14 @@
 package com.project3.AssetFlow.market;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Table(name="exchange_rates")
 public class ExchangeRate {
@@ -28,10 +28,5 @@ public class ExchangeRate {
     private Currency toCurrencyId;
 
     @Column(name="recorded_at")
-    private LocalDate recordedAt;
-
-    public ExchangeRate(BigDecimal rate, LocalDate recordedAt) {
-        this.rate = rate;
-        this.recordedAt = recordedAt;
-    }
+    private Instant recordedAt;
 }

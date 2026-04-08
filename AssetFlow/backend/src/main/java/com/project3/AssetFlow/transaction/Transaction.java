@@ -2,7 +2,6 @@ package com.project3.AssetFlow.transaction;
 
 import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.portfolio.Portfolio;
-import com.project3.AssetFlow.portfolio.TradeType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,9 +38,9 @@ public class Transaction {
     private LocalDateTime executionTime;
 
     @Column(name="type")
-    private TradeType type;
+    private TransactionType type;
 
-    public Transaction(Asset asset, BigDecimal quantity, BigDecimal pricePerUnit, LocalDateTime executionTime, TradeType type) {
+    public Transaction(Asset asset, BigDecimal quantity, BigDecimal pricePerUnit, LocalDateTime executionTime, TransactionType type) {
         this.asset = asset;
         this.quantity = quantity;
         this.pricePerUnit = pricePerUnit;
