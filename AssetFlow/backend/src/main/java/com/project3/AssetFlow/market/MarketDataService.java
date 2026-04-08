@@ -6,7 +6,6 @@ import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.streaming.dto.FinnHubTrade;
 import com.project3.AssetFlow.streaming.dto.MarketUpdateDTO;
 import com.project3.AssetFlow.streaming.handler.FinnhubSubscriptionManager;
-import com.project3.AssetFlow.streaming.handler.FinnhubWebSocketHandler;
 import jakarta.annotation.PostConstruct;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -80,21 +79,21 @@ public class MarketDataService {
         if (!pricesToSave.isEmpty()) priceRepository.saveAll(pricesToSave);
     }
 
-    public TrackingResult getCompanyProfile (String ticker) {
-       AssetInfoDTO companyProfile = finnhubClient.getCompanyProfile(ticker);
+    public EntityStatus getCompanyProfile (String ticker) {
+        AssetInfoDTO companyProfile = finnhubClient.getCompanyProfile(ticker);
 
-       if(companyProfile == null) return TrackingResult.NOT_FOUND;
-       if(liveCache.containsKey(ticker)) return TrackingResult.ALREADY_TRACKED;
+        if(companyProfile == null) return EntityStatus.NOT_FOUND;
+        if(liveCache.containsKey(ticker)) return EntityStatus.ALREADY_EXISTS;
 
-       return TrackingResult.FOUND;
+        return EntityStatus.FOUND;
     }
 
     @Transactional
-    public TrackingResult addStockToTracking(String ticker) {
-        if(liveCache.containsKey(ticker)) return TrackingResult.ALREADY_TRACKED;
+    public EntityStatus addStockToTracking(String ticker) {
+        if(liveCache.containsKey(ticker)) return EntityStatus.ALREADY_EXISTS;
 
         AssetInfoDTO profile = finnhubClient.getCompanyProfile(ticker);
-        if(profile == null) return TrackingResult.NOT_FOUND;
+        if(profile == null) return EntityStatus.NOT_FOUND;
 
         Asset asset = assetRepository.findByTicker(ticker)
                 .orElseGet(() -> {
@@ -113,21 +112,23 @@ public class MarketDataService {
         ));
 
         subscriptionManager.subscribeToTicker(ticker);
-        return TrackingResult.ADDED;
+        return EntityStatus.ADDED;
     }
 
-    public TrackingResult removeStockFromTracking(String ticker) {
-        if (ticker == null || ticker.isBlank()) return TrackingResult.NOT_FOUND;
+    public EntityStatus removeStockFromTracking(String ticker) {
+        if (ticker == null || ticker.isBlank()) return EntityStatus.INVALID;
 
-        if(liveCache.containsKey(ticker)) {
-            liveCache.remove(ticker);
-            subscriptionManager.unsubscribeFromTicker(ticker);
-            return TrackingResult.NOT_TRACKED;
+        if (!liveCache.containsKey(ticker)) {
+            return EntityStatus.NOT_FOUND;
         }
-        return TrackingResult.NOT_FOUND;
+
+        liveCache.remove(ticker);
+        subscriptionManager.unsubscribeFromTicker(ticker);
+
+        return EntityStatus.REMOVED;
     }
 
     public List<TrackedStocksDTO> getAllTrackedStocks() {
-        return new  ArrayList<>(liveCache.values());
+        return new ArrayList<>(liveCache.values());
     }
 }

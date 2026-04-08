@@ -1,9 +1,10 @@
 package com.project3.AssetFlow.market;
 
-public enum TrackingResult {
-    ALREADY_TRACKED,
+public enum EntityStatus {
+    INVALID,
+    ALREADY_EXISTS,
     ADDED,
     NOT_FOUND,
     FOUND,
-    NOT_TRACKED
+    REMOVED
 }

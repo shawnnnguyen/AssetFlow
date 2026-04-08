@@ -11,7 +11,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class FinnhubSubscriptionManager {
 
-    private static final Logger log = LoggerFactory.getLogger(FinnhubReconnectManager.class);
+    private static final Logger log = LoggerFactory.getLogger(FinnhubSubscriptionManager.class);
 
     private final ObjectMapper mapper;
     private volatile WebSocketSession activeSession;
