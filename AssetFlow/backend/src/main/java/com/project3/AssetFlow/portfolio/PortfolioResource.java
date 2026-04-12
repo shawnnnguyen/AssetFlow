@@ -14,7 +14,7 @@ public class PortfolioResource {
 
     private final PortfolioService portfolioService;
 
-    @GetMapping(value = "{userId}/portfolios")
+    @GetMapping(value = "/{userId}/portfolios")
     public ResponseEntity<List<PortfolioDTO>> getAllPortfoliosByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(portfolioService.getAllPortfoliosByUserId(userId));
     }
@@ -48,9 +48,8 @@ public class PortfolioResource {
         return ResponseEntity.ok(portfolioService.closePortfolio(userId, portfolioId));
     }
 
-    @GetMapping(value = "/{userId}/portfolios/{portfolioId}/performance")
-    public ResponseEntity<PortfolioPerformanceResponse> getPortfolioPerformance(@PathVariable Long userId,
-                                                                                @PathVariable Long portfolioId) {
+    @GetMapping(value = "/portfolios/{portfolioId}/performance")
+    public ResponseEntity<PortfolioPerformanceResponse> getPortfolioPerformance(@PathVariable Long portfolioId) {
         return ResponseEntity.ok(portfolioService.getPortfolioPerformance(portfolioId));
     }
 }

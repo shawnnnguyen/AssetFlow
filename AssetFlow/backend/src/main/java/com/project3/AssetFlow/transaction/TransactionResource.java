@@ -18,7 +18,7 @@ public class TransactionResource {
 
     private final TransactionService transactionService;
 
-    @PostMapping(value = "/portfolios/{portfolioId}/transactions")
+    @PostMapping(value = "/transactions")
     public ResponseEntity<TransactionResponse> recordTransaction(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.recordTransaction(request);
 
@@ -49,7 +49,7 @@ public class TransactionResource {
         return ResponseEntity.ok(transactionService.getTradingHistoryForAsset(portfolioId, ticker, pageable));
     }
 
-    @GetMapping(value = "transactions/{transaction_id}")
+    @GetMapping(value = "transactions/{transactionId}")
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable Long transactionId) {
         return ResponseEntity.ok(transactionService.getTransactionById(transactionId));
     }

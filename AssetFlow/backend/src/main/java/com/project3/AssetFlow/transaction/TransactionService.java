@@ -78,6 +78,7 @@ public class TransactionService {
 
         Transaction newTransaction = new Transaction();
         newTransaction.setPortfolio(portfolio);
+        newTransaction.setUser(portfolio.getUser());
         newTransaction.setAsset(asset);
         newTransaction.setQuantity(request.quantity());
         newTransaction.setPricePerUnit(executedPrice.getPrice());

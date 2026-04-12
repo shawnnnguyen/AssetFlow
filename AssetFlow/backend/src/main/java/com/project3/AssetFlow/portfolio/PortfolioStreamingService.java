@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,45 +33,61 @@ public class PortfolioStreamingService {
     private final MarketDataService marketDataService;
     private final SimpMessagingTemplate messagingTemplate;
 
+    private final Set<Long> pendingPortfolioIds = ConcurrentHashMap.newKeySet();
+
     @Async
     @EventListener
     @Transactional(readOnly = true)
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
-     try {
-         Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
-                 .stream()
-                 .collect(Collectors.toMap(
-                         TrackedStocksDTO::assetId,
-                         TrackedStocksDTO::latestPrice,
-                         (existing, replacement) -> existing
-                 ));
+        try {
 
         List<Portfolio> affectedPortfolios = portfolioRepository.findPortfoliosByAssetIdWithUser(event.assetId());
 
-         if (livePrices.isEmpty()) {
-             return;
-         }
-
          for(Portfolio portfolio : affectedPortfolios) {
-             Long portfolioId = portfolio.getId();
-             Long userId = portfolio.getUser().getId();
-
-             List<Holding> holdings = holdingRepository.findByPortfolioId(portfolioId);
-
-             PortfolioPerformanceResponse response = portfolioService.calculatePortfolioPerformance(
-                     portfolio,
-                     holdings,
-                     livePrices);
-
-             messagingTemplate.convertAndSendToUser(
-                     String.valueOf(userId),
-                     "/queue/portfolio/" + portfolioId,
-                     response
-             );
-             }
+             pendingPortfolioIds.add(portfolio.getId());
+            }
          } catch (Exception e) {
              log.error("Error calculating portfolio performance", e);
          }
-     }
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void processPendingPortfolios() {
+        if(pendingPortfolioIds.isEmpty()) return;
+
+        Set<Long> portfolioToProcess = Set.copyOf(pendingPortfolioIds);
+        if(portfolioToProcess.isEmpty()) return;
+
+        Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
+                .stream()
+                .collect(Collectors.toMap(
+                        TrackedStocksDTO::assetId,
+                        TrackedStocksDTO::latestPrice,
+                        (existing, replacement) -> existing
+                ));
+
+        if (livePrices.isEmpty()) return;
+
+        for(Long portfolioId : portfolioToProcess) {
+            try {
+                Portfolio portfolio = portfolioRepository.findById(portfolioId).orElseThrow();
+
+                List<Holding> holdings = holdingRepository.findByPortfolioId(portfolioId);
+
+                PortfolioPerformanceResponse response = portfolioService.calculatePortfolioPerformance(
+                        portfolio,
+                        holdings,
+                        livePrices);
+
+                messagingTemplate.convertAndSendToUser(
+                        String.valueOf(portfolio.getUser().getId()),
+                        "/queue/portfolio/" + portfolioId,
+                        response);
+
+            } catch (Exception e) {
+                log.error("Error calculating portfolio performance", e);
+            }
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package com.project3.AssetFlow.portfolio.dto;
 
-import com.project3.AssetFlow.holdings.Holding;
 import com.project3.AssetFlow.holdings.dto.HoldingPerformance;
 
 import java.math.BigDecimal;
