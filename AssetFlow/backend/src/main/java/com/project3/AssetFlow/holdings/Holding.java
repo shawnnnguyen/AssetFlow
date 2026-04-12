@@ -1,6 +1,7 @@
-package com.project3.AssetFlow.portfolio;
+package com.project3.AssetFlow.holdings;
 
 import com.project3.AssetFlow.market.Asset;
+import com.project3.AssetFlow.portfolio.Portfolio;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,11 +33,4 @@ public class Holding {
 
     @Column(name="quantity")
     private BigDecimal quantity;
-
-    public Holding(Asset asset, Portfolio portfolio, BigDecimal avgCost, BigDecimal quantity) {
-        this.asset = asset;
-        this.portfolio = portfolio;
-        this.avgCost = avgCost;
-        this.quantity = quantity;
-    }
 }

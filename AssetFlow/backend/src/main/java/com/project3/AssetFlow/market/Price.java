@@ -25,10 +25,4 @@ public class Price {
 
     @Column(name="recorded_at")
     private Instant recordedAt;
-
-    public Price(Asset asset, BigDecimal price, Instant recordedAt) {
-        this.asset = asset;
-        this.price = price;
-        this.recordedAt = recordedAt;
-    }
 }

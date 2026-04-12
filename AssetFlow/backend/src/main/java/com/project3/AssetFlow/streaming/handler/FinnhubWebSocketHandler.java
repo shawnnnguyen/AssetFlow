@@ -4,6 +4,8 @@ import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.market.AssetRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.streaming.dto.FinnhubResponse;
+import com.project3.AssetFlow.streaming.events.FinnhubConnectedEvent;
+import com.project3.AssetFlow.streaming.events.FinnhubDisconnectedEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +31,6 @@ public class FinnhubWebSocketHandler extends TextWebSocketHandler {
     private final ApplicationEventPublisher eventPublisher;
     private final FinnhubSubscriptionManager subscriptionManager;
 
-    public void subscribeToTicker(String ticker) {
-       subscriptionManager.subscribeToTicker(ticker);
-    }
-
-    public void unsubscribeFromTicker(String ticker) {
-        subscriptionManager.unsubscribeFromTicker(ticker);
-    }
-
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("WebSocket connection established");
@@ -44,7 +38,7 @@ public class FinnhubWebSocketHandler extends TextWebSocketHandler {
         eventPublisher.publishEvent(new FinnhubConnectedEvent(this));
 
         List<Asset> trackedAssets = assetRepository.findAll();
-        trackedAssets.forEach(asset -> subscribeToTicker(asset.getTicker()));
+        trackedAssets.forEach(asset -> subscriptionManager.subscribeToTicker(asset.getTicker()));
     }
 
     @Override
