@@ -10,7 +10,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,34 +18,38 @@ public class TransactionResource {
 
     private final TransactionService transactionService;
 
-    @PostMapping("portfolios/{portfolioId}/transactions")
+    @PostMapping(value = "/transactions")
     public ResponseEntity<TransactionResponse> recordTransaction(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.recordTransaction(request);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("portfolios/{portfolioId}/transactions")
-    public ResponseEntity<Page<TransactionResponse>> getPortfolioTradingHistory(
-            @RequestParam Long portfolioId,
-            @RequestParam(required = false) String ticker,
-            @PageableDefault(size = 20, sort = {"executedAt", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+    @GetMapping(value = "/transactions/users/{userId}")
+    public ResponseEntity<Page<TransactionResponse>> getFullTradingsHistory(@PathVariable Long userId,
+                                                                            @PageableDefault(size = 20,
+                                                                                    sort = {"executedAt", "id"},
+                                                                                    direction = Sort.Direction.DESC) Pageable pageable) {
 
-        if (StringUtils.hasText(ticker)) {
-            return ResponseEntity.ok(transactionService.getTradingHistoryForAsset(portfolioId, ticker, pageable));
-        }
+        return ResponseEntity.ok(transactionService.getFullTradingsHistory(userId, pageable));
+    }
+
+    @GetMapping(value = "/transactions/portfolios/{portfolioId}")
+    public ResponseEntity<Page<TransactionResponse>> getPortfolioTradingHistory(@PathVariable Long portfolioId,
+                                                                                @PageableDefault Pageable pageable) {
+
         return ResponseEntity.ok(transactionService.getPortfolioTradingHistory(portfolioId, pageable));
     }
 
-    @GetMapping("/transactions")
-    public ResponseEntity<Page<TransactionResponse>> getGlobalTransactions(
-            @RequestParam(required = false) Long portfolioId,
-            @RequestParam(required = false) String ticker,
-            @PageableDefault(size = 20, sort = {"executedAt", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+    @GetMapping(value = "/transactions/portfolios/{portfolioId}/{ticker}")
+    public ResponseEntity<Page<TransactionResponse>> getTradingHistoryForAsset(@PathVariable Long portfolioId,
+                                                                               @PathVariable String ticker,
+                                                                               @PageableDefault Pageable pageable) {
 
-        return ResponseEntity.ok(transactionService.getFullTradingsHistory(portfolioId, ticker, pageable));
+        return ResponseEntity.ok(transactionService.getTradingHistoryForAsset(portfolioId, ticker, pageable));
     }
 
-    @GetMapping("portfolios/{portfolioId}/transactions/{transactionId}")
+    @GetMapping(value = "transactions/{transactionId}")
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable Long transactionId) {
         return ResponseEntity.ok(transactionService.getTransactionById(transactionId));
     }
