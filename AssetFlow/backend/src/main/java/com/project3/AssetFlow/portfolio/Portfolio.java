@@ -1,5 +1,6 @@
 package com.project3.AssetFlow.portfolio;
 
+import com.project3.AssetFlow.currency.Currency;
 import com.project3.AssetFlow.identity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,8 +35,9 @@ public class Portfolio {
     @Column(name="cash_balance")
     private BigDecimal cashBalance;
 
-    @Column(name = "currency_preference")
-    private String currency;
+    @ManyToOne
+    @JoinColumn(name="currency_code", referencedColumnName = "code")
+    private Currency currency;
 
     @Column(name="created_at")
     private Instant createdAt;

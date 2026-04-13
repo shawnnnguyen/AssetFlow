@@ -11,6 +11,7 @@ public record TransactionResponse(
         Long assetId,
         BigDecimal quantity,
         BigDecimal pricePerUnit,
+        String currencyCode,
         Instant executedAt,
         TransactionType type
 ) {

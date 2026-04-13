@@ -1,5 +1,6 @@
 package com.project3.AssetFlow.market;
 
+import com.project3.AssetFlow.currency.Currency;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,7 @@ public class Asset {
     @Column(name="industry")
     private String industry;
 
-    @Column(name="currency_code")
-    private String currency;
+    @ManyToOne
+    @JoinColumn(name="currency_code", referencedColumnName = "code")
+    private Currency currency;
 }
