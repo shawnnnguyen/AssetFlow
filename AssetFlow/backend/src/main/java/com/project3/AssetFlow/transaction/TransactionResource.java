@@ -25,7 +25,7 @@ public class TransactionResource {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping(value = "/users/{userId}/transactions")
+    @GetMapping(value = "/transactions/users/{userId}")
     public ResponseEntity<Page<TransactionResponse>> getFullTradingsHistory(@PathVariable Long userId,
                                                                             @PageableDefault(size = 20,
                                                                                     sort = {"executedAt", "id"},
@@ -34,14 +34,14 @@ public class TransactionResource {
         return ResponseEntity.ok(transactionService.getFullTradingsHistory(userId, pageable));
     }
 
-    @GetMapping(value = "/portfolios/{portfolioId}/transactions")
+    @GetMapping(value = "/transactions/portfolios/{portfolioId}")
     public ResponseEntity<Page<TransactionResponse>> getPortfolioTradingHistory(@PathVariable Long portfolioId,
                                                                                 @PageableDefault Pageable pageable) {
 
         return ResponseEntity.ok(transactionService.getPortfolioTradingHistory(portfolioId, pageable));
     }
 
-    @GetMapping(value = "/portfolios/{portfolioId}/transactions/{ticker}")
+    @GetMapping(value = "/transactions/portfolios/{portfolioId}/{ticker}")
     public ResponseEntity<Page<TransactionResponse>> getTradingHistoryForAsset(@PathVariable Long portfolioId,
                                                                                @PathVariable String ticker,
                                                                                @PageableDefault Pageable pageable) {
