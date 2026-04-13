@@ -7,6 +7,6 @@ public record NewPortfolioRequest(
         String name,
 
         @NotBlank
-        String currency
+        String currencyCode
 ) {
 }

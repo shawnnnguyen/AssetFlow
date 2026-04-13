@@ -1,5 +1,6 @@
 package com.project3.AssetFlow.transaction;
 
+import com.project3.AssetFlow.currency.CurrencyConversionService;
 import com.project3.AssetFlow.holdings.Holding;
 import com.project3.AssetFlow.holdings.HoldingRepository;
 import com.project3.AssetFlow.market.*;
@@ -25,6 +26,7 @@ public class TransactionService {
     private final AssetRepository assetRepository;
     private final PortfolioRepository portfolioRepository;
     private final HoldingRepository holdingRepository;
+    private final CurrencyConversionService currencyConversionService;
 
     @Transactional
     public TransactionResponse recordTransaction(TransactionRequest request) {
@@ -40,9 +42,13 @@ public class TransactionService {
         Holding updatedHolding = holdingRepository.findByPortfolioIdAndAssetIdForUpdate(request.portfolioId(), request.assetId());
 
         BigDecimal transactionValue = request.quantity().multiply(executedPrice.getPrice());
+        BigDecimal transactionValueInPortfolioCurrency = currencyConversionService.convertCurrency(
+                request.currencyCode(), portfolio.getCurrency().getCode(), transactionValue
+        );
+
 
         if (request.type() == TransactionType.BUY) {
-            if(cashBalance.compareTo(transactionValue) < 0) {
+            if(cashBalance.compareTo(transactionValueInPortfolioCurrency) < 0) {
                 throw new IllegalStateException("Insufficient cash balance");
             }
 
@@ -62,7 +68,7 @@ public class TransactionService {
                 updatedHolding.setAvgCost(newAvgCost);
             }
 
-            portfolio.setCashBalance(cashBalance.subtract(transactionValue));
+            portfolio.setCashBalance(cashBalance.subtract(transactionValueInPortfolioCurrency));
             holdingRepository.save(updatedHolding);
         }
         else if (request.type() == TransactionType.SELL) {
@@ -72,7 +78,7 @@ public class TransactionService {
 
             updatedHolding.setQuantity(updatedHolding.getQuantity().subtract(request.quantity()));
 
-            portfolio.setCashBalance(cashBalance.add(transactionValue));
+            portfolio.setCashBalance(cashBalance.add(transactionValueInPortfolioCurrency));
             holdingRepository.save(updatedHolding);
         }
 
@@ -82,6 +88,7 @@ public class TransactionService {
         newTransaction.setAsset(asset);
         newTransaction.setQuantity(request.quantity());
         newTransaction.setPricePerUnit(executedPrice.getPrice());
+        newTransaction.setCurrency(asset.getCurrency());
         newTransaction.setExecutedAt(request.executedAt());
         newTransaction.setType(request.type());
         transactionRepository.save(newTransaction);
@@ -125,6 +132,7 @@ public class TransactionService {
                 transaction.getAsset().getId(),
                 transaction.getQuantity(),
                 transaction.getPricePerUnit(),
+                transaction.getCurrency().getCode(),
                 transaction.getExecutedAt(),
                 transaction.getType()
         );

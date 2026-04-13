@@ -9,7 +9,7 @@ public record PortfolioDTO(
         Long userId,
         String name,
         PortfolioStatusType status,
-        String currency,
+        String currencyCode,
         BigDecimal cashBalance
 ) {
 }

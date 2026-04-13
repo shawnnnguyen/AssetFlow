@@ -1,5 +1,8 @@
 package com.project3.AssetFlow.portfolio;
 
+import com.project3.AssetFlow.currency.Currency;
+import com.project3.AssetFlow.currency.CurrencyConversionService;
+import com.project3.AssetFlow.currency.CurrencyRepository;
 import com.project3.AssetFlow.holdings.Holding;
 import com.project3.AssetFlow.holdings.HoldingRepository;
 import com.project3.AssetFlow.holdings.HoldingService;
@@ -9,8 +12,6 @@ import com.project3.AssetFlow.identity.UserRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.portfolio.dto.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,8 @@ public class PortfolioService {
     private final HoldingRepository holdingRepository;
     private final HoldingService holdingService;
     private final MarketDataService marketDataService;
-
-    private static final Logger logger = LoggerFactory.getLogger(PortfolioService.class);
+    private final CurrencyConversionService currencyConversionService;
+    private final CurrencyRepository currencyRepository;
 
     public List<PortfolioDTO> getAllPortfoliosByUserId(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
@@ -62,9 +63,11 @@ public class PortfolioService {
         User userProxy = userRepository.getReferenceById(userId);
         Portfolio newPortfolio = new Portfolio();
 
+        Currency baseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+
         newPortfolio.setUser(userProxy);
         newPortfolio.setName(requestedPortfolio.name());
-        newPortfolio.setCurrency(requestedPortfolio.currency());
+        newPortfolio.setCurrency(baseCurrency);
         newPortfolio.setCashBalance(BigDecimal.ZERO);
         newPortfolio.setCreatedAt(Instant.now());
         newPortfolio.setUpdatedAt(Instant.now());
@@ -80,6 +83,7 @@ public class PortfolioService {
                                                                Long userId,
                                                                Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
+        String portfolioCurrencyCode = portfolio.getCurrency().getCode();
 
         boolean isChanged = false;
 
@@ -87,8 +91,13 @@ public class PortfolioService {
             portfolio.setName(requestedPortfolio.name());
             isChanged = true;
         }
-        if (requestedPortfolio.currency() != null && !requestedPortfolio.currency().equals(portfolio.getCurrency())) {
-            portfolio.setCurrency(requestedPortfolio.currency());
+        if (requestedPortfolio.currencyCode() != null && !requestedPortfolio.currencyCode().equals(portfolioCurrencyCode)) {
+            Currency newBaseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+            BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
+
+            portfolio.setCurrency(newBaseCurrency);
+            portfolio.setCashBalance(convertedCashBalance);
+
             isChanged = true;
         }
 
@@ -191,7 +200,7 @@ public class PortfolioService {
                 portfolio.getUser().getId(),
                 portfolio.getName(),
                 portfolio.getStatus(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance());
     }
 
@@ -199,7 +208,7 @@ public class PortfolioService {
         return new PortfolioResponse(
                 portfolio.getId(),
                 portfolio.getName(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance()
         );
     }

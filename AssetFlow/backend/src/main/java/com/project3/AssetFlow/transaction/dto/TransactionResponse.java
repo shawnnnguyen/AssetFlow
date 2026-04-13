@@ -1,7 +1,5 @@
 package com.project3.AssetFlow.transaction.dto;
 
-import com.project3.AssetFlow.market.Asset;
-import com.project3.AssetFlow.portfolio.Portfolio;
 import com.project3.AssetFlow.transaction.TransactionType;
 
 import java.math.BigDecimal;
@@ -12,6 +10,7 @@ public record TransactionResponse(
         Long assetId,
         BigDecimal quantity,
         BigDecimal pricePerUnit,
+        String currencyCode,
         Instant executedAt,
         TransactionType type
 ) {
