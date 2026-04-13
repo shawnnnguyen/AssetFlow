@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AssetRepository extends JpaRepository<Asset, Long> {
-    Optional<Asset>  findByTicker(String ticker);
+    Optional<Asset> findByTicker(String ticker);
 
     @Query("SELECT new com.project3.AssetFlow.market.dto.TrackedStocksDTO(a.id, a.ticker, p.price) " +
             "FROM Asset a LEFT JOIN Price p ON p.asset = a " +

@@ -14,5 +14,5 @@ public record FinnHubTrade(
         BigDecimal price,
 
         @JsonProperty("t")
-        long timestamp
+        Long timestamp
 ) {}

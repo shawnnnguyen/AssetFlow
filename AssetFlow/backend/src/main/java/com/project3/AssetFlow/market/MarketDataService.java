@@ -5,8 +5,10 @@ import com.project3.AssetFlow.market.dto.FinnhubClient;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.streaming.dto.FinnHubTrade;
 import com.project3.AssetFlow.streaming.dto.MarketUpdateDTO;
+import com.project3.AssetFlow.streaming.events.PriceUpdateEvent;
 import com.project3.AssetFlow.streaming.handler.FinnhubSubscriptionManager;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ public class MarketDataService {
     private final SimpMessagingTemplate messagingTemplate;
     private final FinnhubClient finnhubClient;
     private final FinnhubSubscriptionManager subscriptionManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final Map<String, TrackedStocksDTO> liveCache = new ConcurrentHashMap<>();
 
@@ -31,12 +34,14 @@ public class MarketDataService {
                              AssetRepository assetRepository,
                              SimpMessagingTemplate messagingTemplate,
                              FinnhubClient finnhubClient,
-                             FinnhubSubscriptionManager subscriptionManager) {
+                             FinnhubSubscriptionManager subscriptionManager,
+                             ApplicationEventPublisher eventPublisher) {
         this.priceRepository = priceRepository;
         this.assetRepository = assetRepository;
         this.messagingTemplate = messagingTemplate;
         this.finnhubClient = finnhubClient;
         this.subscriptionManager = subscriptionManager;
+        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
@@ -74,6 +79,8 @@ public class MarketDataService {
 
                 messagingTemplate.convertAndSend("/topic/market/" + ticker,
                         new MarketUpdateDTO(ticker, trade.price()));
+
+                eventPublisher.publishEvent(new PriceUpdateEvent(cachedStock.assetId(), trade.price()));
             }
         }
         if (!pricesToSave.isEmpty()) priceRepository.saveAll(pricesToSave);

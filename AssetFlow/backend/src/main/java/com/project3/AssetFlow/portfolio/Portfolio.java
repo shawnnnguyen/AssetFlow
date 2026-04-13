@@ -1,6 +1,5 @@
 package com.project3.AssetFlow.portfolio;
 
-import com.project3.AssetFlow.market.Currency;
 import com.project3.AssetFlow.identity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.Instant;
 
 @Entity
 @Table(name="portfolios")
@@ -18,25 +17,29 @@ import java.util.List;
 public class Portfolio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="portfolio_id")
-    private Long portfolioId;
+    @Column(name="id")
+    private Long id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column(name="name")
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="status")
+    private PortfolioStatusType status;
 
     @Column(name="cash_balance")
     private BigDecimal cashBalance;
 
-    @ManyToOne
-    @JoinColumn(name = "currency_preference")
-    private Currency currency;
+    @Column(name = "currency_preference")
+    private String currency;
 
-    @OneToMany(mappedBy = "portfolio")
-    private List<Holding> holdings;
+    @Column(name="created_at")
+    private Instant createdAt;
 
-    public Portfolio(BigDecimal cashBalance, Currency currency) {
-        this.cashBalance = cashBalance;
-        this.currency = currency;
-    }
+    @Column(name="updated_at")
+    private Instant updatedAt;
 }

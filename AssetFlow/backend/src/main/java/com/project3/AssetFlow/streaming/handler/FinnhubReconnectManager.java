@@ -1,5 +1,7 @@
 package com.project3.AssetFlow.streaming.handler;
 
+import com.project3.AssetFlow.streaming.events.FinnhubConnectedEvent;
+import com.project3.AssetFlow.streaming.events.FinnhubDisconnectedEvent;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
