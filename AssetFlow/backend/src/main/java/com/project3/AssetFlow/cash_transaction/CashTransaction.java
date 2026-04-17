@@ -1,7 +1,6 @@
-package com.project3.AssetFlow.transaction;
+package com.project3.AssetFlow.cash_transaction;
 
 import com.project3.AssetFlow.identity.User;
-import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.portfolio.Portfolio;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,11 +11,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name="transactions")
+@Table(name="cash_transactions")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Transaction {
+public class CashTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,20 +30,13 @@ public class Transaction {
     @JoinColumn(name="portfolio_id")
     private Portfolio portfolio;
 
-    @ManyToOne
-    @JoinColumn(name="asset_id")
-    private Asset asset;
+    @Column(name="type")
+    @Enumerated(EnumType.STRING)
+    private CashTransactionType type;
 
-    @Column(name="quantity")
-    private BigDecimal quantity;
-
-    @Column(name="price_per_unit")
-    private BigDecimal pricePerUnit;
+    @Column(name="amount")
+    private BigDecimal amount;
 
     @Column(name="executed_at")
     private Instant executedAt;
-
-    @Column(name="type")
-    @Enumerated(EnumType.STRING)
-    private TransactionType type;
 }

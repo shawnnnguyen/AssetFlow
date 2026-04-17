@@ -9,13 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/market")
 @RequiredArgsConstructor
 public class MarketResource {
+
     private final MarketDataService service;
 
-    @GetMapping(value="/market/search/{ticker}")
-    public ResponseEntity<String> getCompanyProfile (@PathVariable String ticker) {
-
+    @GetMapping("/profiles/{ticker}")
+    public ResponseEntity<String> getCompanyProfile(@PathVariable String ticker) {
         EntityStatus result = service.getCompanyProfile(ticker);
 
         return switch (result) {
@@ -24,14 +25,18 @@ public class MarketResource {
                     .body("Error: Profile of '" + ticker + "' could not be found.");
             case ALREADY_EXISTS -> ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Error: Profile of '" + ticker + "' is already being tracked.");
-
             default -> throw new IllegalStateException("Unexpected TrackingResult value: " + result);
         };
     }
 
-    @PostMapping(value="/market/track/{ticker}")
-    public ResponseEntity<String> addStockToTracking(@PathVariable String ticker) {
+    @GetMapping("/tracked-stocks")
+    public ResponseEntity<List<TrackedStocksDTO>> getAllTrackedStocks() {
+        List<TrackedStocksDTO> trackedStocks = service.getAllTrackedStocks();
+        return ResponseEntity.ok(trackedStocks);
+    }
 
+    @PostMapping("/tracked-stocks/{ticker}")
+    public ResponseEntity<String> addStockToTracking(@PathVariable String ticker) {
         EntityStatus result = service.addStockToTracking(ticker);
 
         return switch (result) {
@@ -40,12 +45,11 @@ public class MarketResource {
                     .body("Error: Stock '" + ticker + "' is already being tracked.");
             case NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Error: Stock '" + ticker + "' could not be found.");
-
             default -> throw new IllegalStateException("Unexpected TrackingResult value: " + result);
         };
     }
 
-    @PatchMapping(value="/market/untrack/{ticker}")
+    @DeleteMapping("/tracked-stocks/{ticker}")
     public ResponseEntity<String> removeStockFromTracking(@PathVariable String ticker) {
         EntityStatus result = service.removeStockFromTracking(ticker);
 
@@ -55,14 +59,7 @@ public class MarketResource {
             case REMOVED -> ResponseEntity.ok("Stock '" + ticker + "' removed successfully.");
             case INVALID -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: Invalid ticker provided.");
-
             default -> throw new IllegalStateException("Unexpected TrackingResult value: " + result);
         };
-    }
-
-    @GetMapping(value="/market")
-    public ResponseEntity<List<TrackedStocksDTO>> getAllTrackedStocks() {
-        List<TrackedStocksDTO> trackedStocks = service.getAllTrackedStocks();
-        return ResponseEntity.ok(trackedStocks);
     }
 }

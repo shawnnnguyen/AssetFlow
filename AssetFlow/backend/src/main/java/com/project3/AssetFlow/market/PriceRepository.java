@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface PriceRepository extends JpaRepository<Price, Long> {
     @Query(value = """
-           SELECT * FROM price 
+           SELECT * FROM prices
            WHERE asset_id = :assetId 
            AND recorded_at <= :executedAt 
            ORDER BY recorded_at DESC 

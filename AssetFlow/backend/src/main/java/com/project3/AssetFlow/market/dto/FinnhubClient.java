@@ -1,6 +1,5 @@
 package com.project3.AssetFlow.market.dto;
 
-import com.project3.AssetFlow.market.Asset;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;

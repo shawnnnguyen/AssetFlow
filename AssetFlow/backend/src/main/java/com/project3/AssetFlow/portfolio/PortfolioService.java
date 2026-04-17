@@ -9,8 +9,6 @@ import com.project3.AssetFlow.identity.UserRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.portfolio.dto.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,9 +31,7 @@ public class PortfolioService {
     private final HoldingService holdingService;
     private final MarketDataService marketDataService;
 
-    private static final Logger logger = LoggerFactory.getLogger(PortfolioService.class);
-
-    public List<PortfolioDTO> getAllPortfoliosByUserId(Long userId) {
+    public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
 
         if (portfolios.isEmpty()) {
@@ -47,14 +43,14 @@ public class PortfolioService {
                 .toList();
     }
 
-    public PortfolioDTO getPortfolioById(Long userId, Long portfolioId) {
+    public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
 
         return mapToPortfolioDTO(portfolio);
     }
 
     @Transactional
-    public PortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
+    public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
         boolean isExisting = portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name());
 
         if (isExisting) throw new IllegalStateException("Portfolio with this name already exists");
@@ -76,9 +72,9 @@ public class PortfolioService {
     }
 
     @Transactional
-    public Optional<PortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
-                                                               Long userId,
-                                                               Long portfolioId) {
+    public Optional<NewPortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
+                                                                  Long userId,
+                                                                  Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
 
         boolean isChanged = false;
@@ -103,7 +99,7 @@ public class PortfolioService {
     }
 
     @Transactional
-    public PortfolioDTO closePortfolio(Long userId, Long portfolioId) {
+    public PortfolioResponse closePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         portfolio.setStatus(PortfolioStatusType.CLOSED);
         portfolio.setUpdatedAt(Instant.now());
@@ -185,8 +181,8 @@ public class PortfolioService {
         return portfolio;
     }
 
-    private PortfolioDTO mapToPortfolioDTO(Portfolio portfolio) {
-        return new PortfolioDTO(
+    private PortfolioResponse mapToPortfolioDTO(Portfolio portfolio) {
+        return new PortfolioResponse(
                 portfolio.getId(),
                 portfolio.getUser().getId(),
                 portfolio.getName(),
@@ -195,8 +191,8 @@ public class PortfolioService {
                 portfolio.getCashBalance());
     }
 
-    private PortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
-        return new PortfolioResponse(
+    private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
+        return new NewPortfolioResponse(
                 portfolio.getId(),
                 portfolio.getName(),
                 portfolio.getCurrency(),

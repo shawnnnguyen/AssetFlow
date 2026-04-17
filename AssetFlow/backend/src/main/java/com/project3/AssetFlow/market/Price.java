@@ -1,15 +1,17 @@
 package com.project3.AssetFlow.market;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
 @Table(name="prices")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Price {
     @Id

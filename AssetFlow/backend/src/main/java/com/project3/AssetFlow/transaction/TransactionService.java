@@ -89,8 +89,11 @@ public class TransactionService {
         return mapToTransactionResponse(newTransaction);
     }
 
-    public Page<TransactionResponse> getFullTradingsHistory(Long userId, Pageable pageable) {
-        Page<Transaction> history = transactionRepository.findByUserId(userId, pageable);
+    public Page<TransactionResponse> getFullTradingsHistory(Long userId, String ticker, Pageable pageable) {
+        Asset asset = assetRepository.findByTicker(ticker)
+                .orElseThrow(() -> new IllegalStateException("Asset not found"));
+
+        Page<Transaction> history = transactionRepository.searchAllTransactions(userId, asset.getId(), pageable);
 
         return history.map(this::mapToTransactionResponse);
     }
@@ -121,6 +124,7 @@ public class TransactionService {
 
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         return new TransactionResponse(
+                transaction.getId(),
                 transaction.getPortfolio().getId(),
                 transaction.getAsset().getId(),
                 transaction.getQuantity(),

@@ -1,9 +1,7 @@
 package com.project3.AssetFlow.holdings;
 
-import com.project3.AssetFlow.holdings.dto.HoldingDTO;
+import com.project3.AssetFlow.holdings.dto.HoldingResponse;
 import com.project3.AssetFlow.holdings.dto.HoldingPerformance;
-import com.project3.AssetFlow.portfolio.Portfolio;
-import com.project3.AssetFlow.portfolio.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +14,13 @@ import java.util.List;
 public class HoldingService {
 
     private final HoldingRepository holdingRepository;
-    private final PortfolioRepository portfolioRepository;
 
-    public List<HoldingDTO> getHoldingsByPortfolioId(Long userId, Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                .orElseThrow(() -> new IllegalStateException("Portfolio not found"));
-
-        if (!portfolio.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("Portfolio does not belong to the user");
-        }
+    public List<HoldingResponse> getHoldingsByPortfolioId(Long portfolioId) {
 
         return holdingRepository.findByPortfolioId(portfolioId)
                 .stream()
-                .map(holding -> new HoldingDTO(
+                .map(holding -> new HoldingResponse(
+                        holding.getId(),
                         holding.getAsset().getId(),
                         holding.getPortfolio().getId(),
                         holding.getQuantity(),
@@ -38,10 +30,11 @@ public class HoldingService {
                 .toList();
     }
 
-    public List<HoldingDTO> getHoldingsByTicker(String ticker, Long portfolioId) {
+    public List<HoldingResponse> getHoldingsByTicker(String ticker, Long portfolioId) {
         return holdingRepository.findByTickerAndPortfolioId(ticker, portfolioId)
                 .stream()
-                .map(holding -> new HoldingDTO(
+                .map(holding -> new HoldingResponse(
+                        holding.getId(),
                         holding.getAsset().getId(),
                         holding.getPortfolio().getId(),
                         holding.getQuantity(),
@@ -67,6 +60,7 @@ public class HoldingService {
         }
 
         return new HoldingPerformance(
+                holding.getId(),
                 holding.getAsset().getId(),
                 latestPrice,
                 currentTotalValue,
