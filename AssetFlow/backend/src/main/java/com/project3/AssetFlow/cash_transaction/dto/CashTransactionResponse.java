@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record CashTransactionResponse(
-        Long userId,
+        Long transactionId,
         Long portfolioId,
         CashTransactionType type,
         BigDecimal amount,

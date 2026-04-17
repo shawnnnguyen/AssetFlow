@@ -1,11 +1,15 @@
 package com.project3.AssetFlow.portfolio.dto;
 
+import com.project3.AssetFlow.portfolio.PortfolioStatusType;
+
 import java.math.BigDecimal;
-import java.time.Instant;
 
 public record PortfolioResponse(
         Long id,
+        Long userId,
         String name,
+        PortfolioStatusType status,
         String currency,
         BigDecimal cashBalance
-) {}
+) {
+}

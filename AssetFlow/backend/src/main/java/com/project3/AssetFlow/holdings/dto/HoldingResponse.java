@@ -2,7 +2,8 @@ package com.project3.AssetFlow.holdings.dto;
 
 import java.math.BigDecimal;
 
-public record HoldingDTO(
+public record HoldingResponse(
+        Long holdingId,
         Long assetId,
         Long portfolioId,
 

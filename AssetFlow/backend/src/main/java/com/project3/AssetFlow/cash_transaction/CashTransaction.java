@@ -31,6 +31,7 @@ public class CashTransaction {
     private Portfolio portfolio;
 
     @Column(name="type")
+    @Enumerated(EnumType.STRING)
     private CashTransactionType type;
 
     @Column(name="amount")

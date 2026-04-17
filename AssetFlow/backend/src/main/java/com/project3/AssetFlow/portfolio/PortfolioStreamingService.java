@@ -57,6 +57,9 @@ public class PortfolioStreamingService {
         if(pendingPortfolioIds.isEmpty()) return;
 
         Set<Long> portfolioToProcess = Set.copyOf(pendingPortfolioIds);
+
+        pendingPortfolioIds.removeAll(portfolioToProcess);
+
         if(portfolioToProcess.isEmpty()) return;
 
         Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
@@ -84,6 +87,8 @@ public class PortfolioStreamingService {
                         String.valueOf(portfolio.getUser().getId()),
                         "/queue/portfolio/" + portfolioId,
                         response);
+
+
 
             } catch (Exception e) {
                 log.error("Error calculating portfolio performance", e);

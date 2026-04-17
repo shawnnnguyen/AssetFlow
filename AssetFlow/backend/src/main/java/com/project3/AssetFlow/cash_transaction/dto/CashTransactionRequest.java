@@ -7,10 +7,6 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record CashTransactionRequest(
-
-        @NotNull
-        Long userId,
-
         @NotNull
         Long portfolioId,
 

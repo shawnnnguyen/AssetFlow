@@ -53,16 +53,6 @@ public class CashTransactionService {
         return mapToTransactionResponse(newTransaction);
     }
 
-    public Page<CashTransactionResponse> getAllTransactions(Long userId, Pageable pageable) {
-        Page<CashTransaction> transactions = cashTransactionRepository.findByUserId(userId, pageable);
-
-        if(transactions.isEmpty()) {
-            return Page.empty();
-        }
-
-        return transactions.map(this::mapToTransactionResponse);
-    }
-
     public Page<CashTransactionResponse> getTransactionsByPortfolio(Long portfolioId, Pageable pageable) {
         Page<CashTransaction> transactions = cashTransactionRepository.findByPortfolioId(portfolioId, pageable);
 

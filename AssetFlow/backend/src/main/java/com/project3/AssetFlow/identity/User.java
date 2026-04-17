@@ -2,14 +2,17 @@ package com.project3.AssetFlow.identity;
 
 import com.project3.AssetFlow.portfolio.Portfolio;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "users")
 public class User {
 
@@ -27,8 +30,8 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @OneToOne(mappedBy = "user")
-    private Portfolio portfolio;
+    @OneToMany(mappedBy = "user")
+    private List<Portfolio> portfolios;
 
     private boolean enabled = true;
 

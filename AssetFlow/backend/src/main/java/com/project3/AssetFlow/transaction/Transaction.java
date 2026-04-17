@@ -4,15 +4,17 @@ import com.project3.AssetFlow.identity.User;
 import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.portfolio.Portfolio;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
 @Table(name="transactions")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Transaction {
 
@@ -43,5 +45,6 @@ public class Transaction {
     private Instant executedAt;
 
     @Column(name="type")
+    @Enumerated(EnumType.STRING)
     private TransactionType type;
 }
