@@ -46,35 +46,44 @@ public class MarketDataService {
     @Transactional
     public void processTrades(FinnHubTrade[] trades) {
         List<Price> pricesToSave = new ArrayList<>();
+        List<MarketUpdateDTO> updates = new ArrayList<>();
 
         for(FinnHubTrade trade : trades) {
             String ticker = trade.ticker();
             TrackedStocksDTO cachedStock = liveCache.get(ticker);
 
-            if(cachedStock != null) {
-                liveCache.put(ticker, new TrackedStocksDTO(
-                        cachedStock.assetId(),
-                        ticker,
-                        trade.price()
-                ));
+            if (cachedStock == null) continue;
+            BigDecimal oldPrice = cachedStock.latestPrice();
 
-                Price newPrice = new Price();
-                newPrice.setPrice(trade.price());
-                newPrice.setRecordedAt(Instant.ofEpochMilli(trade.timestamp()));
+            liveCache.put(ticker, new TrackedStocksDTO(
+                    cachedStock.assetId(),
+                    ticker,
+                    trade.price()
+            ));
 
-                Asset assetRef = new Asset();
-                assetRef.setId(cachedStock.assetId());
-                newPrice.setAsset(assetRef);
 
-                pricesToSave.add(newPrice);
+            Price newPrice = new Price();
+            newPrice.setPrice(trade.price());
+            newPrice.setRecordedAt(Instant.ofEpochMilli(trade.timestamp()));
 
-                messagingTemplate.convertAndSend("/topic/market/" + ticker,
-                        new MarketUpdateDTO(ticker, trade.price()));
+            Asset assetRef = assetRepository.getReferenceById(cachedStock.assetId());
+            assetRef.setId(cachedStock.assetId());
+            newPrice.setAsset(assetRef);
 
-                eventPublisher.publishEvent(new PriceUpdateEvent(cachedStock.assetId(), trade.price()));
+            pricesToSave.add(newPrice);
+            updates.add(new MarketUpdateDTO(ticker, trade.price()));
+
+            if (!oldPrice.equals(trade.price())) {
+                eventPublisher.publishEvent(new PriceUpdateEvent(cachedStock.assetId(), oldPrice, trade.price()));
             }
         }
-        if (!pricesToSave.isEmpty()) priceRepository.saveAll(pricesToSave);
+        if (!pricesToSave.isEmpty()) {
+            priceRepository.saveAll(pricesToSave);
+
+            for (MarketUpdateDTO update : updates) {
+                messagingTemplate.convertAndSend("/topic/market/" + update.ticker(), update);
+            }
+        }
     }
 
     public EntityStatus getCompanyProfile (String ticker) {

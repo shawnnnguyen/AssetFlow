@@ -24,5 +24,9 @@ public class FrontendWebSocketConfig implements WebSocketMessageBrokerConfigurer
         registry.addEndpoint("/ws-market")
                 .setAllowedOrigins("http://localhost:3000")
                 .withSockJS();
+
+        registry.addEndpoint("/ws-alerts")
+                .setAllowedOrigins("http://localhost:3000")
+                .withSockJS();
     }
 }
