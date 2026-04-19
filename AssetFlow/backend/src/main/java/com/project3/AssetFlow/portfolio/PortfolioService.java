@@ -1,5 +1,8 @@
 package com.project3.AssetFlow.portfolio;
 
+import com.project3.AssetFlow.currency.Currency;
+import com.project3.AssetFlow.currency.CurrencyConversionService;
+import com.project3.AssetFlow.currency.CurrencyRepository;
 import com.project3.AssetFlow.holdings.Holding;
 import com.project3.AssetFlow.holdings.HoldingRepository;
 import com.project3.AssetFlow.holdings.HoldingService;
@@ -30,8 +33,10 @@ public class PortfolioService {
     private final HoldingRepository holdingRepository;
     private final HoldingService holdingService;
     private final MarketDataService marketDataService;
+    private final CurrencyConversionService currencyConversionService;
+    private final CurrencyRepository currencyRepository;
 
-    public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
+    public List<PortfolioDTO> getAllPortfoliosByUserId(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
 
         if (portfolios.isEmpty()) {
@@ -43,14 +48,14 @@ public class PortfolioService {
                 .toList();
     }
 
-    public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
+    public PortfolioDTO getPortfolioById(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
 
         return mapToPortfolioDTO(portfolio);
     }
 
     @Transactional
-    public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
+    public PortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
         boolean isExisting = portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name());
 
         if (isExisting) throw new IllegalStateException("Portfolio with this name already exists");
@@ -58,9 +63,11 @@ public class PortfolioService {
         User userProxy = userRepository.getReferenceById(userId);
         Portfolio newPortfolio = new Portfolio();
 
+        Currency baseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+
         newPortfolio.setUser(userProxy);
         newPortfolio.setName(requestedPortfolio.name());
-        newPortfolio.setCurrency(requestedPortfolio.currency());
+        newPortfolio.setCurrency(baseCurrency);
         newPortfolio.setCashBalance(BigDecimal.ZERO);
         newPortfolio.setCreatedAt(Instant.now());
         newPortfolio.setUpdatedAt(Instant.now());
@@ -72,10 +79,11 @@ public class PortfolioService {
     }
 
     @Transactional
-    public Optional<NewPortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
-                                                                  Long userId,
-                                                                  Long portfolioId) {
+    public Optional<PortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
+                                                               Long userId,
+                                                               Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
+        String portfolioCurrencyCode = portfolio.getCurrency().getCode();
 
         boolean isChanged = false;
 
@@ -83,8 +91,13 @@ public class PortfolioService {
             portfolio.setName(requestedPortfolio.name());
             isChanged = true;
         }
-        if (requestedPortfolio.currency() != null && !requestedPortfolio.currency().equals(portfolio.getCurrency())) {
-            portfolio.setCurrency(requestedPortfolio.currency());
+        if (requestedPortfolio.currencyCode() != null && !requestedPortfolio.currencyCode().equals(portfolioCurrencyCode)) {
+            Currency newBaseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+            BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
+
+            portfolio.setCurrency(newBaseCurrency);
+            portfolio.setCashBalance(convertedCashBalance);
+
             isChanged = true;
         }
 
@@ -99,7 +112,7 @@ public class PortfolioService {
     }
 
     @Transactional
-    public PortfolioResponse closePortfolio(Long userId, Long portfolioId) {
+    public PortfolioDTO closePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         portfolio.setStatus(PortfolioStatusType.CLOSED);
         portfolio.setUpdatedAt(Instant.now());
@@ -181,21 +194,21 @@ public class PortfolioService {
         return portfolio;
     }
 
-    private PortfolioResponse mapToPortfolioDTO(Portfolio portfolio) {
-        return new PortfolioResponse(
+    private PortfolioDTO mapToPortfolioDTO(Portfolio portfolio) {
+        return new PortfolioDTO(
                 portfolio.getId(),
                 portfolio.getUser().getId(),
                 portfolio.getName(),
                 portfolio.getStatus(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance());
     }
 
-    private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
-        return new NewPortfolioResponse(
+    private PortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
+        return new PortfolioResponse(
                 portfolio.getId(),
                 portfolio.getName(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance()
         );
     }
