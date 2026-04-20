@@ -15,7 +15,7 @@ import lombok.Setter;
 @Table(name="currencies")
 public class Currency {
     @Id
-    @Column(name="code", unique = true, length = 3)
+    @Column(name="code", length = 3)
     private String code;
 
     @Column(name="symbol")

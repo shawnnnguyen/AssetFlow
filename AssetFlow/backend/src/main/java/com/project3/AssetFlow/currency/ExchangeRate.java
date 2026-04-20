@@ -21,12 +21,12 @@ public class ExchangeRate {
     @Column(name="rate")
     private BigDecimal rate;
 
-    @ManyToOne
-    @JoinColumn(name="from_currency", referencedColumnName = "code")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "from_currency_code")
     private Currency fromCurrency;
 
-    @ManyToOne
-    @JoinColumn(name="to_currency", referencedColumnName = "code")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_currency_code")
     private Currency toCurrency;
 
     @Column(name="updated_at")

@@ -12,7 +12,6 @@ public record TransactionRequest(
         @NotNull Long portfolioId,
         @NotNull Instant executedAt,
         @NotNull @Positive BigDecimal quantity,
-        @NotNull String currencyCode,
         @NotNull TransactionType type
 ) {
 }

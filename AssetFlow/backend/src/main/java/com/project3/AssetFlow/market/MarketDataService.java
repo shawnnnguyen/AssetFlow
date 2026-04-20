@@ -91,6 +91,8 @@ public class MarketDataService {
         if(liveCache.containsKey(ticker)) return EntityStatus.ALREADY_EXISTS;
 
         AssetInfoDTO profile = finnhubClient.getCompanyProfile(ticker);
+        if(profile == null) return EntityStatus.NOT_FOUND;
+
         Currency stockNativeCurrency = currencyRepository.findByCode(profile.currencyCode());
 
         Asset asset = assetRepository.findByTicker(ticker)

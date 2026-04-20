@@ -35,7 +35,7 @@ public class Portfolio {
     @Column(name="cash_balance")
     private BigDecimal cashBalance;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="currency_code", referencedColumnName = "code")
     private Currency currency;
 

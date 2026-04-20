@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +19,23 @@ public class CurrencyConversionService {
         }
 
         ExchangeRate exchangeRate = exchangeRateRepository
-                .findByFromCurrencyAndToCurrency(fromCurrency.toUpperCase(), toCurrency.toUpperCase());
+                .findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), toCurrency.toUpperCase());
 
-        return amount.multiply(exchangeRate.getRate());
+        if (exchangeRate != null) {
+            return amount.multiply(exchangeRate.getRate());
+        }
+
+        ExchangeRate inverseRate = exchangeRateRepository
+                .findByFromCurrencyCodeAndToCurrencyCode(toCurrency.toUpperCase(), fromCurrency.toUpperCase());
+
+        if (inverseRate != null) {
+            BigDecimal calculatedRate = BigDecimal.ONE.divide(inverseRate.getRate(),4, RoundingMode.HALF_UP);
+            return amount.multiply(calculatedRate);
+        }
+
+        BigDecimal toBaseCurrency = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), "USD").getRate();
+        BigDecimal fromBaseCurrency = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode("USD", toCurrency.toUpperCase()).getRate();
+        BigDecimal calculatedRate = toBaseCurrency.multiply(fromBaseCurrency);
+        return amount.multiply(calculatedRate);
     }
 }

@@ -43,7 +43,7 @@ public class TransactionService {
 
         BigDecimal transactionValue = request.quantity().multiply(executedPrice.getPrice());
         BigDecimal transactionValueInPortfolioCurrency = currencyConversionService.convertCurrency(
-                request.currencyCode(), portfolio.getCurrency().getCode(), transactionValue
+                asset.getCurrency().getCode(), portfolio.getCurrency().getCode(), transactionValue
         );
 
 

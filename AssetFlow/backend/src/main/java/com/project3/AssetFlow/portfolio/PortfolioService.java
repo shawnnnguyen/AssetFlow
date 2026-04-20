@@ -36,7 +36,7 @@ public class PortfolioService {
     private final CurrencyConversionService currencyConversionService;
     private final CurrencyRepository currencyRepository;
 
-    public List<PortfolioDTO> getAllPortfoliosByUserId(Long userId) {
+    public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
 
         if (portfolios.isEmpty()) {
@@ -44,18 +44,18 @@ public class PortfolioService {
         }
 
         return portfolios.stream()
-                .map(this::mapToPortfolioDTO)
+                .map(this::mapToPortfolioResponse)
                 .toList();
     }
 
-    public PortfolioDTO getPortfolioById(Long userId, Long portfolioId) {
+    public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
 
-        return mapToPortfolioDTO(portfolio);
+        return mapToPortfolioResponse(portfolio);
     }
 
     @Transactional
-    public PortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
+    public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
         boolean isExisting = portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name());
 
         if (isExisting) throw new IllegalStateException("Portfolio with this name already exists");
@@ -108,16 +108,16 @@ public class PortfolioService {
         portfolio.setUpdatedAt(Instant.now());
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        return Optional.of(mapToNewPortfolioResponse(savedPortfolio));
+        return Optional.of(mapToPortfolioResponse(savedPortfolio));
     }
 
     @Transactional
-    public PortfolioDTO closePortfolio(Long userId, Long portfolioId) {
+    public PortfolioResponse closePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         portfolio.setStatus(PortfolioStatusType.CLOSED);
         portfolio.setUpdatedAt(Instant.now());
 
-        return mapToPortfolioDTO(portfolio);
+        return mapToPortfolioResponse(portfolio);
     }
 
     public PortfolioPerformanceResponse calculatePortfolioPerformance(Portfolio portfolio,
@@ -194,8 +194,8 @@ public class PortfolioService {
         return portfolio;
     }
 
-    private PortfolioDTO mapToPortfolioDTO(Portfolio portfolio) {
-        return new PortfolioDTO(
+    private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
+        return new NewPortfolioResponse(
                 portfolio.getId(),
                 portfolio.getUser().getId(),
                 portfolio.getName(),
@@ -204,7 +204,7 @@ public class PortfolioService {
                 portfolio.getCashBalance());
     }
 
-    private PortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
+    private PortfolioResponse mapToPortfolioResponse(Portfolio portfolio) {
         return new PortfolioResponse(
                 portfolio.getId(),
                 portfolio.getName(),
