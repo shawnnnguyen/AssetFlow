@@ -1,0 +1,8 @@
+.git
+.github
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+src/
+pom.xml
