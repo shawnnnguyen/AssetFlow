@@ -1,5 +1,7 @@
 package com.project3.AssetFlow.market;
 
+import com.project3.AssetFlow.currency.CurrencyRepository;
+import com.project3.AssetFlow.currency.Currency;
 import com.project3.AssetFlow.market.dto.AssetInfoDTO;
 import com.project3.AssetFlow.market.dto.FinnhubClient;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
@@ -8,6 +10,7 @@ import com.project3.AssetFlow.streaming.dto.MarketUpdateDTO;
 import com.project3.AssetFlow.streaming.events.PriceUpdateEvent;
 import com.project3.AssetFlow.streaming.handler.FinnhubSubscriptionManager;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -19,30 +22,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class MarketDataService {
 
     private final PriceRepository priceRepository;
     private final AssetRepository assetRepository;
+    private final CurrencyRepository currencyRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final FinnhubClient finnhubClient;
     private final FinnhubSubscriptionManager subscriptionManager;
     private final ApplicationEventPublisher eventPublisher;
 
     private final Map<String, TrackedStocksDTO> liveCache = new ConcurrentHashMap<>();
-
-    public MarketDataService(PriceRepository priceRepository,
-                             AssetRepository assetRepository,
-                             SimpMessagingTemplate messagingTemplate,
-                             FinnhubClient finnhubClient,
-                             FinnhubSubscriptionManager subscriptionManager,
-                             ApplicationEventPublisher eventPublisher) {
-        this.priceRepository = priceRepository;
-        this.assetRepository = assetRepository;
-        this.messagingTemplate = messagingTemplate;
-        this.finnhubClient = finnhubClient;
-        this.subscriptionManager = subscriptionManager;
-        this.eventPublisher = eventPublisher;
-    }
 
     @PostConstruct
     public void initCache() {
@@ -102,11 +93,14 @@ public class MarketDataService {
         AssetInfoDTO profile = finnhubClient.getCompanyProfile(ticker);
         if(profile == null) return EntityStatus.NOT_FOUND;
 
+        Currency stockNativeCurrency = currencyRepository.findByCode(profile.currencyCode());
+
         Asset asset = assetRepository.findByTicker(ticker)
                 .orElseGet(() -> {
                     Asset newAsset = new Asset();
                     newAsset.setTicker(ticker);
                     newAsset.setAssetName(profile.name());
+                    newAsset.setCurrency(stockNativeCurrency);
                     newAsset.setCountry(profile.country());
                     newAsset.setIndustry(profile.industry());
                     return assetRepository.save(newAsset);

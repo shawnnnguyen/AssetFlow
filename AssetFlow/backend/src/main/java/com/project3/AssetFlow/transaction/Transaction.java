@@ -1,5 +1,6 @@
 package com.project3.AssetFlow.transaction;
 
+import com.project3.AssetFlow.currency.Currency;
 import com.project3.AssetFlow.identity.User;
 import com.project3.AssetFlow.market.Asset;
 import com.project3.AssetFlow.portfolio.Portfolio;
@@ -40,6 +41,10 @@ public class Transaction {
 
     @Column(name="price_per_unit")
     private BigDecimal pricePerUnit;
+
+    @ManyToOne
+    @JoinColumn(name="currency_code", referencedColumnName = "code")
+    private Currency currency;
 
     @Column(name="executed_at")
     private Instant executedAt;

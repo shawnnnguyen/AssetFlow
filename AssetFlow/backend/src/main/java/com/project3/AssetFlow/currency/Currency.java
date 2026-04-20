@@ -1,4 +1,4 @@
-package com.project3.AssetFlow.market;
+package com.project3.AssetFlow.currency;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,7 +15,7 @@ import lombok.Setter;
 @Table(name="currencies")
 public class Currency {
     @Id
-    @Column(name="code", unique = true)
+    @Column(name="code", length = 3)
     private String code;
 
     @Column(name="symbol")

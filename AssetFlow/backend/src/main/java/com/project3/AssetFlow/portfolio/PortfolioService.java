@@ -1,5 +1,8 @@
 package com.project3.AssetFlow.portfolio;
 
+import com.project3.AssetFlow.currency.Currency;
+import com.project3.AssetFlow.currency.CurrencyConversionService;
+import com.project3.AssetFlow.currency.CurrencyRepository;
 import com.project3.AssetFlow.holdings.Holding;
 import com.project3.AssetFlow.holdings.HoldingRepository;
 import com.project3.AssetFlow.holdings.HoldingService;
@@ -30,6 +33,8 @@ public class PortfolioService {
     private final HoldingRepository holdingRepository;
     private final HoldingService holdingService;
     private final MarketDataService marketDataService;
+    private final CurrencyConversionService currencyConversionService;
+    private final CurrencyRepository currencyRepository;
 
     public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
@@ -39,14 +44,14 @@ public class PortfolioService {
         }
 
         return portfolios.stream()
-                .map(this::mapToPortfolioDTO)
+                .map(this::mapToPortfolioResponse)
                 .toList();
     }
 
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
 
-        return mapToPortfolioDTO(portfolio);
+        return mapToPortfolioResponse(portfolio);
     }
 
     @Transactional
@@ -58,9 +63,11 @@ public class PortfolioService {
         User userProxy = userRepository.getReferenceById(userId);
         Portfolio newPortfolio = new Portfolio();
 
+        Currency baseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+
         newPortfolio.setUser(userProxy);
         newPortfolio.setName(requestedPortfolio.name());
-        newPortfolio.setCurrency(requestedPortfolio.currency());
+        newPortfolio.setCurrency(baseCurrency);
         newPortfolio.setCashBalance(BigDecimal.ZERO);
         newPortfolio.setCreatedAt(Instant.now());
         newPortfolio.setUpdatedAt(Instant.now());
@@ -72,10 +79,11 @@ public class PortfolioService {
     }
 
     @Transactional
-    public Optional<NewPortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
-                                                                  Long userId,
-                                                                  Long portfolioId) {
+    public Optional<PortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
+                                                               Long userId,
+                                                               Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
+        String portfolioCurrencyCode = portfolio.getCurrency().getCode();
 
         boolean isChanged = false;
 
@@ -83,8 +91,13 @@ public class PortfolioService {
             portfolio.setName(requestedPortfolio.name());
             isChanged = true;
         }
-        if (requestedPortfolio.currency() != null && !requestedPortfolio.currency().equals(portfolio.getCurrency())) {
-            portfolio.setCurrency(requestedPortfolio.currency());
+        if (requestedPortfolio.currencyCode() != null && !requestedPortfolio.currencyCode().equals(portfolioCurrencyCode)) {
+            Currency newBaseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+            BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
+
+            portfolio.setCurrency(newBaseCurrency);
+            portfolio.setCashBalance(convertedCashBalance);
+
             isChanged = true;
         }
 
@@ -95,7 +108,7 @@ public class PortfolioService {
         portfolio.setUpdatedAt(Instant.now());
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        return Optional.of(mapToNewPortfolioResponse(savedPortfolio));
+        return Optional.of(mapToPortfolioResponse(savedPortfolio));
     }
 
     @Transactional
@@ -104,7 +117,7 @@ public class PortfolioService {
         portfolio.setStatus(PortfolioStatusType.CLOSED);
         portfolio.setUpdatedAt(Instant.now());
 
-        return mapToPortfolioDTO(portfolio);
+        return mapToPortfolioResponse(portfolio);
     }
 
     public PortfolioPerformanceResponse calculatePortfolioPerformance(Portfolio portfolio,
@@ -181,21 +194,21 @@ public class PortfolioService {
         return portfolio;
     }
 
-    private PortfolioResponse mapToPortfolioDTO(Portfolio portfolio) {
-        return new PortfolioResponse(
+    private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
+        return new NewPortfolioResponse(
                 portfolio.getId(),
                 portfolio.getUser().getId(),
                 portfolio.getName(),
                 portfolio.getStatus(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance());
     }
 
-    private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
-        return new NewPortfolioResponse(
+    private PortfolioResponse mapToPortfolioResponse(Portfolio portfolio) {
+        return new PortfolioResponse(
                 portfolio.getId(),
                 portfolio.getName(),
-                portfolio.getCurrency(),
+                portfolio.getCurrency().getCode(),
                 portfolio.getCashBalance()
         );
     }

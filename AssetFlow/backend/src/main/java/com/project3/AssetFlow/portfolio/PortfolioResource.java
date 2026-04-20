@@ -36,7 +36,7 @@ public class PortfolioResource {
     }
 
     @PatchMapping("/{portfolioId}")
-    public ResponseEntity<NewPortfolioResponse> updatePortfolio(
+    public ResponseEntity<PortfolioResponse> updatePortfolio(
             @PathVariable Long userId,
             @PathVariable Long portfolioId,
             @RequestBody UpdatePortfolioRequest portfolioRequest) {
