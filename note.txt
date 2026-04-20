@@ -1,0 +1,30 @@
+### Portfolio
+
+/api/v1/portfolio/summary	    GET	    Returns Total Holdings Value, Cash Balance, and 24h Change (%).
+/api/v1/portfolio/holdings	    GET	    Lists all owned assets (Ticker, Quantity, Avg Buy Price, Current Value).
+/api/v1/portfolio/cash	        GET	    Detailed breakdown of available vs. settled cash.
+/api/v1/portfolio/allocation	GET	    Data for charts (e.g., % of portfolio in Tech vs. Energy).
+
+### Market
+
+/api/v1/market/ticker/{symbol}	        GET	    Current price, open/close, and high/low for the "Trade Board."
+/api/v1/market/ticker/{symbol}/info	    GET	    Company profile: Industry, Description, and CEO.
+/api/v1/market/ticker/{symbol}/stats	GET	    Key financials: Profit margins, P/E ratio, Market Cap.
+/api/v1/market/search	                GET	    Search for tickers by name (e.g., query ?q=Apple).
+
+### Transactions
+
+/api/portfolios/{portfolio_id}/transactions             POST        Record a new buy or sell order. This is where your heavy business logic lives.
+/api/portfolios/{portfolio_id}/transactions             GET         Fetch the trading history for a specific portfolio.
+/api/transactions/{transaction_id}                      GET         Retrieve the details of a specific, individual transaction.
+
+### Holdings
+
+/api/portfolios/{portfolio_id}/holdings                 GET         Fetch the current snapshot of all assets owned in a portfolio.
+/api/portfolios/{portfolio_id}/holdings/{asset_id}      GET         Get the details of a specific holding.
+
+
+NEED TO DO:
+
+add logic for calculate holding performance
+logic for transaction for cashflow
