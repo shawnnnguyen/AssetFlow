@@ -29,4 +29,7 @@ public class AlertTriggered {
 
     @Column(name = "triggered_at")
     private Instant triggeredAt;
+
+    @Column(name = "dispatched_at")
+    private Instant dispatchedAt;
 }

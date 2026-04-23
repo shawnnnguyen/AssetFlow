@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Entity
 @Table(name = "price_alerts")
@@ -22,17 +21,17 @@ public class PriceAlert {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "asset_id")
     private Asset asset;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(name = "enabled")
+    private boolean enabled;
+
     @Column(name = "target_price")
     private BigDecimal targetPrice;
-
-    @OneToMany(mappedBy = "priceAlert", cascade = CascadeType.ALL)
-    private List<AlertTriggered> history;
 }

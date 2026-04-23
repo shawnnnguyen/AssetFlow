@@ -32,14 +32,10 @@ public class PriceAlertService {
         alert.setAsset(asset);
         alert.setUser(user);
         alert.setTargetPrice(request.targetPrice());
+        alert.setEnabled(true);
         priceAlertRepository.save(alert);
 
-        return new AlertResponse(
-                alert.getId(),
-                alert.getUser().getId(),
-                asset.getId(),
-                request.targetPrice()
-        );
+        return mapToResponse(alert);
     }
 
     @Transactional
@@ -48,25 +44,21 @@ public class PriceAlertService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
         PriceAlert alert = priceAlertRepository.findById(alertId)
+                .filter(PriceAlert::isEnabled)
                 .orElseThrow(() -> new IllegalStateException("Alert not found"));
 
         if(!alert.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("User does not own this alert");
         }
 
-        if(request.newTargetPrice() == null || request.newTargetPrice().equals(alert.getTargetPrice())) {
-            return null;
+        if(request.newTargetPrice() == null || request.newTargetPrice().compareTo(alert.getTargetPrice()) == 0) {
+            alert.setTargetPrice(request.newTargetPrice());
         }
 
         alert.setTargetPrice(request.newTargetPrice());
         priceAlertRepository.save(alert);
 
-        return new AlertResponse(
-                alert.getId(),
-                alert.getUser().getId(),
-                alert.getAsset().getId(),
-                request.newTargetPrice()
-        );
+        return mapToResponse(alert);
     }
 
     public void deleteAlert(Long userId, Long alertId) {
@@ -74,25 +66,31 @@ public class PriceAlertService {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
         PriceAlert alert = priceAlertRepository.findById(alertId)
+                .filter(PriceAlert::isEnabled)
                 .orElseThrow(() -> new IllegalStateException("Alert not found"));
 
         if(!alert.getUser().getId().equals(user.getId())) {
             throw new IllegalStateException("User does not own this alert");
         }
 
-        priceAlertRepository.delete(alert);
+        alert.setEnabled(false);
+        priceAlertRepository.save(alert);
     }
 
     public List<AlertResponse> getAllAlerts(Long userId) {
         List<PriceAlert> alerts = priceAlertRepository.findByUserId(userId);
 
         return alerts.stream()
-                .map(alert -> new AlertResponse(
-                        alert.getId(),
-                        alert.getUser().getId(),
-                        alert.getAsset().getId(),
-                        alert.getTargetPrice()
-                ))
+                .map(this::mapToResponse)
                 .toList();
+    }
+
+    private AlertResponse mapToResponse(PriceAlert alert) {
+        return new AlertResponse(
+                alert.getId(),
+                alert.getUser().getId(),
+                alert.getAsset().getId(),
+                alert.getTargetPrice()
+        );
     }
 }

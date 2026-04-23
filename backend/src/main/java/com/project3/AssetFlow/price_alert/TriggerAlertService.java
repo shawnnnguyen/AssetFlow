@@ -7,15 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 @Service
@@ -26,11 +23,9 @@ public class TriggerAlertService {
     private final AlertTriggeredRepository alertTriggeredRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
-    private final Queue<AlertTriggeredResponse  > pendingNotifications = new ConcurrentLinkedQueue<>();
-
-    @Async
+    @Async("alertNotificationExecutor")
     @EventListener
-    @Transactional(readOnly = true)
+    @Transactional
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
         try {
@@ -50,55 +45,43 @@ public class TriggerAlertService {
                 alertTriggered.setPriceAlert(alert);
                 alertTriggered.setTriggeredPrice(event.latestPrice());
                 alertTriggered.setTriggeredAt(Instant.now());
+                alert.setEnabled(false);
 
                 alertsToSave.add(alertTriggered);
             }
-
             List<AlertTriggered> savedAlerts = alertTriggeredRepo.saveAll(alertsToSave);
+            dispatchAlertNotifications(savedAlerts);
+        } catch (Exception e) {
+            log.error("Failed to process price alerts for asset ID: {} at price {}. Notifications were not sent.",
+                    event.assetId(), event.latestPrice(), e);
+        }
+    }
 
-            for (AlertTriggered alert : savedAlerts) {
-                AlertTriggeredResponse response = new AlertTriggeredResponse(
+    public void dispatchAlertNotifications(List<AlertTriggered> alerts) {
+        List<AlertTriggered> successfullyDispatched = new ArrayList<>();
+
+        for (AlertTriggered alert : alerts) {
+            try {
+                PriceAlert alertToNotify = alert.getPriceAlert();
+                Long targetUserId = alertToNotify.getUser().getId();
+
+                AlertTriggeredResponse payload = new AlertTriggeredResponse(
                         alert.getId(),
-                        alert.getPriceAlert().getId(),
-                        alert.getPriceAlert().getUser().getId(),
-                        alert.getPriceAlert().getAsset().getId(),
+                        alertToNotify.getId(),
+                        targetUserId,
+                        alertToNotify.getAsset().getId(),
                         alert.getTriggeredPrice(),
                         alert.getTriggeredAt()
                 );
 
-                pendingNotifications.offer(response);
+                messagingTemplate.convertAndSend("/topic/alerts/" + targetUserId, payload);
+                successfullyDispatched.add(alert);
+            } catch (Exception e) {
+                log.error("Error dispatching alert notification", e);
             }
-        } catch (Exception e) {
-            log.error("Error calculating portfolio performance", e);
         }
-    }
-
-    @Scheduled(fixedRate = 300000)
-    public void dispatchPendingNotifications() {
-        if (pendingNotifications.isEmpty()) {
-            return;
-        }
-
-        log.info("Dispatching {} pending price alerts via WebSocket...", pendingNotifications.size());
-
-        while (!pendingNotifications.isEmpty()) {
-            AlertTriggeredResponse payload = pendingNotifications.poll();
-
-            if (payload != null) {
-                try {
-                    PriceAlert alert = alertRepository.findById(payload.alertId())
-                            .orElseThrow();
-                    Long targetUserId = alert.getUser().getId();
-
-                    messagingTemplate.convertAndSendToUser(
-                            String.valueOf(targetUserId),
-                            "/queue/alerts",
-                            payload
-                    );
-                } catch (Exception e) {
-                    log.error("Failed to send websocket alert history ID: {}", payload.alertTriggeredId(), e);
-                }
-            }
+        if (!successfullyDispatched.isEmpty()) {
+            alertTriggeredRepo.saveAll(successfullyDispatched);
         }
     }
 }

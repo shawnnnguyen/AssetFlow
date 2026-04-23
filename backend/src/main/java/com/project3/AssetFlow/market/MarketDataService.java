@@ -54,29 +54,32 @@ public class MarketDataService {
 
             if (cachedStock == null) continue;
             BigDecimal oldPrice = cachedStock.latestPrice();
+            BigDecimal newPrice = trade.price();
 
-            liveCache.put(ticker, new TrackedStocksDTO(
-                    cachedStock.assetId(),
-                    ticker,
-                    trade.price()
-            ));
+            if(oldPrice == null || oldPrice.compareTo(newPrice) != 0) {
+                liveCache.put(ticker, new TrackedStocksDTO(
+                        cachedStock.assetId(),
+                        ticker,
+                        newPrice
+                ));
 
 
-            Price newPrice = new Price();
-            newPrice.setPrice(trade.price());
-            newPrice.setRecordedAt(Instant.ofEpochMilli(trade.timestamp()));
+                Price priceEntity = new Price();
+                priceEntity.setPrice(trade.price());
+                priceEntity.setRecordedAt(Instant.ofEpochMilli(trade.timestamp()));
 
-            Asset assetRef = assetRepository.getReferenceById(cachedStock.assetId());
-            assetRef.setId(cachedStock.assetId());
-            newPrice.setAsset(assetRef);
+                Asset assetRef = assetRepository.getReferenceById(cachedStock.assetId());
+                priceEntity.setAsset(assetRef);
 
-            pricesToSave.add(newPrice);
-            updates.add(new MarketUpdateDTO(ticker, trade.price()));
+                pricesToSave.add(priceEntity);
+                updates.add(new MarketUpdateDTO(ticker, trade.price()));
+            }
 
-            if (!oldPrice.equals(trade.price())) {
+            if (oldPrice != null && oldPrice.compareTo(trade.price()) != 0) {
                 eventPublisher.publishEvent(new PriceUpdateEvent(cachedStock.assetId(), oldPrice, trade.price()));
             }
         }
+
         if (!pricesToSave.isEmpty()) {
             priceRepository.saveAll(pricesToSave);
 
@@ -118,7 +121,7 @@ public class MarketDataService {
         liveCache.put(ticker, new TrackedStocksDTO(
                 asset.getId(),
                 ticker,
-                BigDecimal.ZERO
+                null
         ));
 
         subscriptionManager.subscribeToTicker(ticker);

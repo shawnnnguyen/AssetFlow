@@ -11,8 +11,9 @@ public interface PriceAlertRepository extends JpaRepository<PriceAlert, Long> {
     @Query(value = """
         SELECT * FROM price_alerts
         WHERE asset_id = :assetId
-        AND ((:oldPrice <= targer_price AND :newPrice >= target_price)
-            OR (:oldPrice >= targer_price AND :newPrice <= target_price))
+        AND enabled = true
+        AND ((:oldPrice <= target_price AND :newPrice >= target_price)
+            OR (:oldPrice >= target_price AND :newPrice <= target_price))
 """, nativeQuery = true)
     List<PriceAlert> findTriggeredAlerts(Long assetId, BigDecimal oldPrice, BigDecimal latestPrice);
 
