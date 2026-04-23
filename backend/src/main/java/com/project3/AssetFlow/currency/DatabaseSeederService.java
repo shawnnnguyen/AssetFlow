@@ -13,6 +13,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +57,7 @@ public class DatabaseSeederService {
             }
         } catch (Exception e) {
             logger.error("Error reading currencies from CSV: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to seed currencies", e);
         }
 
         if (!currencies.isEmpty()) {
@@ -68,6 +72,9 @@ public class DatabaseSeederService {
         logger.info("Reading exchange rates from CSV...");
         List<ExchangeRate> rates = new ArrayList<>();
 
+        Map<String, Currency> currencyCache = currencyRepo.findAll().stream()
+                .collect(Collectors.toMap(Currency::getCode, Function.identity()));
+
         try (InputStreamReader isr = new InputStreamReader(new ClassPathResource("exchange_rates.csv").getInputStream());
              CSVReader reader = new CSVReader(isr)) {
 
@@ -78,8 +85,13 @@ public class DatabaseSeederService {
                 try {
                     ExchangeRate rate = new ExchangeRate();
 
-                    Currency fromCurrency = currencyRepo.findByCode(data[2].trim());
-                    Currency toCurrency = currencyRepo.findByCode(data[3].trim());
+                    Currency fromCurrency = currencyCache.get(data[2].trim());
+                    Currency toCurrency = currencyCache.get(data[3].trim());
+
+                    if (fromCurrency == null || toCurrency == null) {
+                        logger.warn("Skipping exchange rate due to missing currency lookup. From: {}, To: {}", data[2].trim(), data[3].trim());
+                        continue;
+                    }
 
                     rate.setRate(new BigDecimal(data[1].trim()));
                     rate.setFromCurrency(fromCurrency);
@@ -94,6 +106,7 @@ public class DatabaseSeederService {
             }
         } catch (Exception e) {
             logger.error("Error reading exchange rates from CSV: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to seed exchange rates", e);
         }
 
         if (!rates.isEmpty()) {
