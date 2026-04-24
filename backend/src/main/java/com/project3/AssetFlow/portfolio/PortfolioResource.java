@@ -45,7 +45,7 @@ public class PortfolioResource {
                 .orElse(ResponseEntity.noContent().build());
     }
 
-    @PatchMapping("/{portfolioId}/close")
+    @DeleteMapping("/{portfolioId}")
     public ResponseEntity<PortfolioResponse> closePortfolio(
             @PathVariable Long userId,
             @PathVariable Long portfolioId) {
