@@ -1,5 +1,6 @@
 package com.project3.AssetFlow.market;
 
+import com.project3.AssetFlow.market.dto.AssetProfileResponse;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,17 +17,11 @@ public class MarketResource {
     private final MarketDataService service;
 
     @GetMapping("/profiles/{ticker}")
-    public ResponseEntity<String> getCompanyProfile(@PathVariable String ticker) {
-        EntityStatus result = service.getCompanyProfile(ticker);
+    public ResponseEntity<AssetProfileResponse> getCompanyProfile(@PathVariable String ticker) {
+        AssetProfileResponse response = service.getCompanyProfile(ticker);
 
-        return switch (result) {
-            case FOUND -> ResponseEntity.ok("Profile of '" + ticker + "' found.");
-            case NOT_FOUND -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Error: Profile of '" + ticker + "' could not be found.");
-            case ALREADY_EXISTS -> ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Error: Profile of '" + ticker + "' is already being tracked.");
-            default -> throw new IllegalStateException("Unexpected TrackingResult value: " + result);
-        };
+        if(response == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/tracked-stocks")

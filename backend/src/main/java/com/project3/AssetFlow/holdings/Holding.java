@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 public class Holding {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="holding_id")
+    @Column(name="id")
     private Long id;
 
     @ManyToOne
