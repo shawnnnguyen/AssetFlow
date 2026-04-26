@@ -19,7 +19,15 @@ const fetchApi = async (endpoint, method = 'GET', body = null) => {
     }
 
     const text = await response.text();
-    return text ? JSON.parse(text) : { success: true };
+
+    if (!text) return { success: true };
+
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      return { message: text };
+    }
+
   } catch (error) {
     console.error(`Error with ${endpoint}:`, error);
     return { error: error.message };
@@ -31,9 +39,9 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [wsStatus, setWsStatus] = useState('Connecting...');
 
-  const [userId, setUserId] = useState();
-  const [portfolioId, setPortfolioId] = useState();
-  const [ticker, setTicker] = useState();
+  const [userId, setUserId] = useState('');
+  const [portfolioId, setPortfolioId] = useState('');
+  const [ticker, setTicker] = useState('');
 
   const [portfoliosRes, setPortfoliosRes] = useState(null);
   const [holdingsRes, setHoldingsRes] = useState(null);
@@ -89,8 +97,19 @@ function App() {
     setMarketRes(data);
   };
 
+  const handleTrackStock = async () => {
+    const data = await fetchApi(`/market/tracked-stocks/${ticker}`, 'POST');
+    setMarketRes(data);
+  };
+
+  const handleUntrackStock = async () => {
+    const data = await fetchApi(`/market/tracked-stocks/${ticker}`, 'DELETE');
+    setMarketRes(data);
+  };
+
   const sectionStyle = { border: '1px solid #ccc', padding: '15px', marginBottom: '20px', borderRadius: '5px' };
   const preStyle = { background: '#f4f4f4', padding: '10px', maxHeight: '200px', overflowY: 'auto' };
+  const buttonStyle = { marginLeft: '10px', padding: '4px 8px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px' };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
@@ -108,7 +127,7 @@ function App() {
             <div>
               <label>User ID: </label>
               <input value={userId} onChange={(e) => setUserId(e.target.value)} />
-              <button onClick={handleGetPortfolios} style={{ marginLeft: '10px' }}>GET Portfolios</button>
+              <button onClick={handleGetPortfolios} style={buttonStyle}>GET Portfolios</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(portfoliosRes, null, 2) || 'No data yet'}</pre>
           </div>
@@ -118,18 +137,19 @@ function App() {
             <div>
               <label>Portfolio ID: </label>
               <input value={portfolioId} onChange={(e) => setPortfolioId(e.target.value)} />
-              <button onClick={handleGetHoldings} style={{ marginLeft: '10px' }}>GET Holdings</button>
+              <button onClick={handleGetHoldings} style={buttonStyle}>GET Holdings</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(holdingsRes, null, 2) || 'No data yet'}</pre>
           </div>
 
-          {/* Market Resource */}
           <div style={sectionStyle}>
-            <h3>Market Profile</h3>
+            <h3>Market Profile & Tracking</h3>
             <div>
               <label>Ticker: </label>
               <input value={ticker} onChange={(e) => setTicker(e.target.value)} />
-              <button onClick={handleGetMarketProfile} style={{ marginLeft: '10px' }}>GET Profile</button>
+              <button onClick={handleGetMarketProfile} style={buttonStyle}>GET Profile</button>
+              <button onClick={handleTrackStock} style={{ ...buttonStyle, backgroundColor: '#4caf50', color: 'white', borderColor: '#4caf50' }}>Add to Tracking</button>
+              <button onClick={handleUntrackStock} style={{ ...buttonStyle, backgroundColor: '#f44336', color: 'white', borderColor: '#f44336' }}>Remove from Tracking</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(marketRes, null, 2) || 'No data yet'}</pre>
           </div>

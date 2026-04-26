@@ -3,6 +3,7 @@ package com.project3.AssetFlow.market;
 import com.project3.AssetFlow.currency.CurrencyRepository;
 import com.project3.AssetFlow.currency.Currency;
 import com.project3.AssetFlow.market.dto.AssetInfoDTO;
+import com.project3.AssetFlow.market.dto.AssetProfileResponse;
 import com.project3.AssetFlow.market.dto.FinnhubClient;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.streaming.dto.FinnHubTrade;
@@ -84,18 +85,23 @@ public class MarketDataService {
             priceRepository.saveAll(pricesToSave);
 
             for (MarketUpdateDTO update : updates) {
-                messagingTemplate.convertAndSend("/topic/market/" + update.ticker(), update);
+                messagingTemplate.convertAndSend("/topic/prices", update);
             }
         }
     }
 
-    public EntityStatus getCompanyProfile (String ticker) {
-        AssetInfoDTO companyProfile = finnhubClient.getCompanyProfile(ticker);
+    public AssetProfileResponse getCompanyProfile (String ticker) {
+        AssetInfoDTO providerData = finnhubClient.getCompanyProfile(ticker);
 
-        if(companyProfile == null) return EntityStatus.NOT_FOUND;
-        if(liveCache.containsKey(ticker)) return EntityStatus.ALREADY_EXISTS;
+        if(providerData == null) return null;
 
-        return EntityStatus.FOUND;
+        return new AssetProfileResponse(
+                ticker,
+                providerData.name(),
+                providerData.country(),
+                providerData.currencyCode(),
+                providerData.industry()
+        );
     }
 
     @Transactional
