@@ -36,16 +36,21 @@ const fetchApi = async (endpoint, method = 'GET', body = null) => {
 
 function App() {
   const [marketUpdates, setMarketUpdates] = useState([]);
-  const [alerts, setAlerts] = useState([]);
+  const [wsAlerts, setWsAlerts] = useState([]);
   const [wsStatus, setWsStatus] = useState('Connecting...');
 
   const [userId, setUserId] = useState('');
   const [portfolioId, setPortfolioId] = useState('');
   const [ticker, setTicker] = useState('');
 
+  const [alertTargetPrice, setAlertTargetPrice] = useState('');
+  const [alertId, setAlertId] = useState('');
+  const [alertNewPrice, setAlertNewPrice] = useState('');
+
   const [portfoliosRes, setPortfoliosRes] = useState(null);
   const [holdingsRes, setHoldingsRes] = useState(null);
   const [marketRes, setMarketRes] = useState(null);
+  const [alertsHttpRes, setAlertsHttpRes] = useState(null);
 
   useEffect(() => {
     const marketClient = new Client({
@@ -68,7 +73,7 @@ function App() {
       onConnect: () => {
         alertsClient.subscribe('/topic/alerts', (message) => {
           const newAlert = JSON.parse(message.body);
-          setAlerts(prev => [newAlert, ...prev].slice(0, 5));
+          setWsAlerts(prev => [newAlert, ...prev].slice(0, 5));
         });
       },
     });
@@ -107,9 +112,38 @@ function App() {
     setMarketRes(data);
   };
 
+  const handleGetAlerts = async () => {
+    const data = await fetchApi(`/users/${userId}/price-alerts`);
+    setAlertsHttpRes(data);
+  };
+
+  const handleCreateAlert = async () => {
+    const data = await fetchApi(`/users/${userId}/price-alerts`, 'POST', {
+      ticker,
+      targetPrice: parseFloat(alertTargetPrice)
+    });
+    setAlertsHttpRes(data);
+    handleGetAlerts();
+  };
+
+  const handleUpdateAlert = async () => {
+    const data = await fetchApi(`/users/${userId}/price-alerts/${alertId}`, 'PATCH', {
+      newTargetPrice: parseFloat(alertNewPrice)
+    });
+    setAlertsHttpRes(data);
+    handleGetAlerts();
+  };
+
+  const handleDeleteAlert = async () => {
+    const data = await fetchApi(`/users/${userId}/price-alerts/${alertId}`, 'DELETE');
+    setAlertsHttpRes(data);
+    handleGetAlerts();
+  };
+
   const sectionStyle = { border: '1px solid #ccc', padding: '15px', marginBottom: '20px', borderRadius: '5px' };
   const preStyle = { background: '#f4f4f4', padding: '10px', maxHeight: '200px', overflowY: 'auto' };
   const buttonStyle = { marginLeft: '10px', padding: '4px 8px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px' };
+  const inputStyle = { width: '90px', marginLeft: '5px', padding: '3px' };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
@@ -119,14 +153,44 @@ function App() {
 
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
 
-        <div style={{ flex: '1 1 400px' }}>
+        <div style={{ flex: '1 1 550px' }}>
           <h2>HTTP Endpoints</h2>
+
+          <div style={sectionStyle}>
+            <h3>Manage Price Alerts</h3>
+
+            <div style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px dashed #ddd' }}>
+              <label><strong>User ID: </strong></label>
+              <input value={userId} onChange={(e) => setUserId(e.target.value)} style={inputStyle} />
+              <label style={{marginLeft: '15px'}}><strong>Ticker: </strong></label>
+              <input value={ticker} onChange={(e) => setTicker(e.target.value)} style={inputStyle} />
+            </div>
+
+            <div style={{ marginBottom: '10px' }}>
+              <button onClick={handleGetAlerts} style={{...buttonStyle, marginLeft: 0}}>GET All Alerts</button>
+            </div>
+
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+              <strong>Create: </strong>
+              <input type="number" step="0.01" placeholder="Target Price" value={alertTargetPrice} onChange={(e) => setAlertTargetPrice(e.target.value)} style={{...inputStyle, width: '110px'}} />
+              <button onClick={handleCreateAlert} style={{ ...buttonStyle, backgroundColor: '#4caf50', color: 'white', borderColor: '#4caf50' }}>POST Alert</button>
+            </div>
+
+            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+              <strong>Modify: </strong>
+              <input placeholder="Alert ID" value={alertId} onChange={(e) => setAlertId(e.target.value)} style={inputStyle} />
+              <input type="number" step="0.01" placeholder="New Price" value={alertNewPrice} onChange={(e) => setAlertNewPrice(e.target.value)} style={{...inputStyle, width: '100px'}} />
+              <button onClick={handleUpdateAlert} style={{ ...buttonStyle, backgroundColor: '#ff9800', color: 'white', borderColor: '#ff9800' }}>PATCH</button>
+              <button onClick={handleDeleteAlert} style={{ ...buttonStyle, backgroundColor: '#f44336', color: 'white', borderColor: '#f44336' }}>DELETE</button>
+            </div>
+
+            <pre style={preStyle}>{JSON.stringify(alertsHttpRes, null, 2) || 'No data yet'}</pre>
+          </div>
 
           <div style={sectionStyle}>
             <h3>User Portfolios</h3>
             <div>
-              <label>User ID: </label>
-              <input value={userId} onChange={(e) => setUserId(e.target.value)} />
+              <input placeholder="User ID" value={userId} onChange={(e) => setUserId(e.target.value)} style={{...inputStyle, marginLeft: 0}} />
               <button onClick={handleGetPortfolios} style={buttonStyle}>GET Portfolios</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(portfoliosRes, null, 2) || 'No data yet'}</pre>
@@ -135,8 +199,7 @@ function App() {
           <div style={sectionStyle}>
             <h3>Portfolio Holdings</h3>
             <div>
-              <label>Portfolio ID: </label>
-              <input value={portfolioId} onChange={(e) => setPortfolioId(e.target.value)} />
+              <input placeholder="Portfolio ID" value={portfolioId} onChange={(e) => setPortfolioId(e.target.value)} style={{...inputStyle, marginLeft: 0, width: '100px'}} />
               <button onClick={handleGetHoldings} style={buttonStyle}>GET Holdings</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(holdingsRes, null, 2) || 'No data yet'}</pre>
@@ -145,11 +208,10 @@ function App() {
           <div style={sectionStyle}>
             <h3>Market Profile & Tracking</h3>
             <div>
-              <label>Ticker: </label>
-              <input value={ticker} onChange={(e) => setTicker(e.target.value)} />
+              <input placeholder="Ticker" value={ticker} onChange={(e) => setTicker(e.target.value)} style={{...inputStyle, marginLeft: 0}} />
               <button onClick={handleGetMarketProfile} style={buttonStyle}>GET Profile</button>
-              <button onClick={handleTrackStock} style={{ ...buttonStyle, backgroundColor: '#4caf50', color: 'white', borderColor: '#4caf50' }}>Add to Tracking</button>
-              <button onClick={handleUntrackStock} style={{ ...buttonStyle, backgroundColor: '#f44336', color: 'white', borderColor: '#f44336' }}>Remove from Tracking</button>
+              <button onClick={handleTrackStock} style={{ ...buttonStyle, backgroundColor: '#4caf50', color: 'white', borderColor: '#4caf50' }}>Add Tracking</button>
+              <button onClick={handleUntrackStock} style={{ ...buttonStyle, backgroundColor: '#f44336', color: 'white', borderColor: '#f44336' }}>Remove Tracking</button>
             </div>
             <pre style={preStyle}>{JSON.stringify(marketRes, null, 2) || 'No data yet'}</pre>
           </div>
@@ -168,7 +230,7 @@ function App() {
           <div style={sectionStyle}>
             <h3>Price Alerts (/topic/alerts)</h3>
             <pre style={{ ...preStyle, background: '#ffe6e6' }}>
-              {alerts.length > 0 ? JSON.stringify(alerts, null, 2) : 'Waiting for alerts...'}
+              {wsAlerts.length > 0 ? JSON.stringify(wsAlerts, null, 2) : 'Waiting for alerts...'}
             </pre>
           </div>
         </div>

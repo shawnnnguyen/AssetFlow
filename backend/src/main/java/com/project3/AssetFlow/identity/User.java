@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,13 +34,14 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Portfolio> portfolios;
 
-    private boolean enabled = true;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }
