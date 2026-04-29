@@ -6,6 +6,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -20,13 +21,9 @@ public class FrontendWebSocketConfig implements WebSocketMessageBrokerConfigurer
     }
 
     @Override
-    public void registerStompEndpoints(org.springframework.web.socket.config.annotation.StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-market")
-                .setAllowedOrigins("http://localhost:5173")
-                .withSockJS();
-
-        registry.addEndpoint("/ws-alerts")
-                .setAllowedOrigins("http://localhost:5173")
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws-market", "/ws-alerts")
+                .setAllowedOrigins("http://localhost:3000")
                 .withSockJS();
     }
 }

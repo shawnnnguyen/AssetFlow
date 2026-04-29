@@ -52,6 +52,9 @@ function App() {
   const [marketRes, setMarketRes] = useState(null);
   const [alertsHttpRes, setAlertsHttpRes] = useState(null);
 
+  const [alertsClient, setAlertsClient] = useState(null);
+  const [alertSubscription, setAlertSubscription] = useState(null);
+
   useEffect(() => {
     const marketClient = new Client({
       webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-market`),
@@ -67,25 +70,48 @@ function App() {
       onWebSocketError: (error) => console.error('Market WS Error:', error),
     });
 
-    const alertsClient = new Client({
+    const newAlertsClient = new Client({
       webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-alerts`),
       reconnectDelay: 5000,
       onConnect: () => {
-        alertsClient.subscribe('/topic/alerts', (message) => {
-          const newAlert = JSON.parse(message.body);
-          setWsAlerts(prev => [newAlert, ...prev].slice(0, 5));
-        });
+        console.log('Connected to Alerts WS');
       },
+      onWebSocketError: (error) => console.error('Alerts WS Error:', error),
     });
 
     marketClient.activate();
-    alertsClient.activate();
+    newAlertsClient.activate();
+
+    setAlertsClient(newAlertsClient);
 
     return () => {
       marketClient.deactivate();
-      alertsClient.deactivate();
+      newAlertsClient.deactivate();
     };
   }, []);
+
+  useEffect(() => {
+    if (!alertsClient || !alertsClient.connected || !userId) return;
+
+    if (alertSubscription) {
+      alertSubscription.unsubscribe();
+    }
+
+    const topicString = `/topic/alerts/${userId}`;
+    console.log(`Subscribing to: ${topicString}`);
+
+    // Subscribe to the new specific topic
+    const sub = alertsClient.subscribe(topicString, (message) => {
+      const newAlert = JSON.parse(message.body);
+      setWsAlerts(prev => [newAlert, ...prev].slice(0, 5));
+    });
+
+    setAlertSubscription(sub);
+
+    return () => {
+      if (sub) sub.unsubscribe();
+    };
+  }, [alertsClient, userId]);
 
   const handleGetPortfolios = async () => {
     const data = await fetchApi(`/users/${userId}/portfolios`);
@@ -140,6 +166,7 @@ function App() {
     handleGetAlerts();
   };
 
+  // --- UI Styles ---
   const sectionStyle = { border: '1px solid #ccc', padding: '15px', marginBottom: '20px', borderRadius: '5px' };
   const preStyle = { background: '#f4f4f4', padding: '10px', maxHeight: '200px', overflowY: 'auto' };
   const buttonStyle = { marginLeft: '10px', padding: '4px 8px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px' };

@@ -28,33 +28,29 @@ public class TriggerAlertService {
     @Transactional
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
-        try {
-            List<PriceAlert> triggeredAlerts = alertRepository.findTriggeredAlerts(
-                    event.assetId(),
-                    event.oldPrice(),
-                    event.latestPrice()
-            );
+        List<PriceAlert> triggeredAlerts = alertRepository.findTriggeredAlerts(
+                event.assetId(),
+                event.oldPrice(),
+                event.latestPrice()
+        );
 
-            if (triggeredAlerts.isEmpty()) return;
+        if (triggeredAlerts.isEmpty()) return;
 
-            List<AlertTriggered> alertsToSave = new ArrayList<>();
+        List<AlertTriggered> alertsToSave = new ArrayList<>();
 
-            for (PriceAlert alert : triggeredAlerts) {
+        for (PriceAlert alert : triggeredAlerts) {
+            AlertTriggered alertTriggered = new AlertTriggered();
+            alertTriggered.setPriceAlert(alert);
+            alertTriggered.setTriggeredPrice(event.latestPrice());
+            alertTriggered.setTriggeredAt(Instant.now());
 
-                AlertTriggered alertTriggered = new AlertTriggered();
-                alertTriggered.setPriceAlert(alert);
-                alertTriggered.setTriggeredPrice(event.latestPrice());
-                alertTriggered.setTriggeredAt(Instant.now());
-                alert.setEnabled(false);
-
-                alertsToSave.add(alertTriggered);
-            }
-            List<AlertTriggered> savedAlerts = alertTriggeredRepo.saveAll(alertsToSave);
-            dispatchAlertNotifications(savedAlerts);
-        } catch (Exception e) {
-            log.error("Failed to process price alerts for asset ID: {} at price {}. Notifications were not sent.",
-                    event.assetId(), event.latestPrice(), e);
+            alert.setEnabled(false);
+            alertsToSave.add(alertTriggered);
         }
+
+        List<AlertTriggered> savedAlerts = alertTriggeredRepo.saveAll(alertsToSave);
+
+        dispatchAlertNotifications(savedAlerts);
     }
 
     public void dispatchAlertNotifications(List<AlertTriggered> alerts) {
@@ -75,13 +71,11 @@ public class TriggerAlertService {
                 );
 
                 messagingTemplate.convertAndSend("/topic/alerts/" + targetUserId, payload);
+                alert.setDispatchedAt(Instant.now());
                 successfullyDispatched.add(alert);
             } catch (Exception e) {
                 log.error("Error dispatching alert notification", e);
             }
-        }
-        if (!successfullyDispatched.isEmpty()) {
-            alertTriggeredRepo.saveAll(successfullyDispatched);
         }
     }
 }
