@@ -1,43 +1,51 @@
 package com.project3.AssetFlow.price_alert;
 
+import com.project3.AssetFlow.identity.securityConfig.UserPrincipal;
 import com.project3.AssetFlow.price_alert.dto.AlertResponse;
 import com.project3.AssetFlow.price_alert.dto.CreateAlertRequest;
 import com.project3.AssetFlow.price_alert.dto.UpdateAlertRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/users/{userId}/price-alerts")
+@RequestMapping("/price-alerts")
 @RequiredArgsConstructor
 public class PriceAlertResource {
 
     private final PriceAlertService priceAlertService;
 
     @PostMapping
-    public ResponseEntity<AlertResponse> createAlert(@PathVariable Long userId,
-                                                     @Valid @RequestBody CreateAlertRequest request) {
-        return ResponseEntity.status(201).body(priceAlertService.createAlert(userId, request));
+    public ResponseEntity<AlertResponse> createAlert(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateAlertRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(priceAlertService.createAlert(principal.getId(), request));
     }
 
-    @PatchMapping(value = "/{alertId}")
-    public ResponseEntity<AlertResponse> updateAlert(@PathVariable Long userId,
-                                                              @PathVariable Long alertId,
-                                                              @Valid @RequestBody UpdateAlertRequest request) {
-        return ResponseEntity.ok(priceAlertService.updateAlert(userId, alertId, request));
+    @PatchMapping("/{alertId}")
+    public ResponseEntity<AlertResponse> updateAlert(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long alertId,
+            @Valid @RequestBody UpdateAlertRequest request) {
+        return ResponseEntity.ok(priceAlertService.updateAlert(principal.getId(), alertId, request));
     }
 
     @GetMapping
-    public ResponseEntity<List<AlertResponse>> getAllAlerts(@PathVariable Long userId) {
-        return ResponseEntity.ok(priceAlertService.getAllAlerts(userId));
+    public ResponseEntity<List<AlertResponse>> getAllAlerts(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(priceAlertService.getAllAlerts(principal.getId()));
     }
 
-    @DeleteMapping(value = "/{alertId}")
-    public ResponseEntity<Void> deleteAlert(@PathVariable Long userId, @PathVariable Long alertId) {
-        priceAlertService.deleteAlert(userId, alertId);
+    @DeleteMapping("/{alertId}")
+    public ResponseEntity<Void> deleteAlert(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long alertId) {
+        priceAlertService.deleteAlert(principal.getId(), alertId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -8,8 +8,10 @@ import com.project3.AssetFlow.price_alert.dto.AlertResponse;
 import com.project3.AssetFlow.price_alert.dto.CreateAlertRequest;
 import com.project3.AssetFlow.price_alert.dto.UpdateAlertRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -21,16 +23,16 @@ public class PriceAlertService {
     private final UserRepository userRepository;
     private final AssetRepository assetRepository;
 
+    @Transactional
     public AlertResponse createAlert(Long userId, CreateAlertRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-
         Asset asset = assetRepository.findByTicker(request.ticker())
-                .orElseThrow(() -> new IllegalStateException("Asset not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+
+        User userRef = userRepository.getReferenceById(userId);
 
         PriceAlert alert = new PriceAlert();
         alert.setAsset(asset);
-        alert.setUser(user);
+        alert.setUser(userRef);
         alert.setTargetPrice(request.targetPrice());
         alert.setEnabled(true);
         priceAlertRepository.save(alert);
@@ -40,47 +42,35 @@ public class PriceAlertService {
 
     @Transactional
     public AlertResponse updateAlert(Long userId, Long alertId, UpdateAlertRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-
         PriceAlert alert = priceAlertRepository.findById(alertId)
                 .filter(PriceAlert::isEnabled)
-                .orElseThrow(() -> new IllegalStateException("Alert not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found"));
 
-        if(!alert.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("User does not own this alert");
-        }
-
-        if(request.newTargetPrice() == null || request.newTargetPrice().compareTo(alert.getTargetPrice()) == 0) {
-            alert.setTargetPrice(request.newTargetPrice());
+        if (!alert.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found");
         }
 
         alert.setTargetPrice(request.newTargetPrice());
-        priceAlertRepository.save(alert);
 
         return mapToResponse(alert);
     }
 
+    @Transactional
     public void deleteAlert(Long userId, Long alertId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-
         PriceAlert alert = priceAlertRepository.findById(alertId)
                 .filter(PriceAlert::isEnabled)
-                .orElseThrow(() -> new IllegalStateException("Alert not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found"));
 
-        if(!alert.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("User does not own this alert");
+        if (!alert.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found");
         }
 
         alert.setEnabled(false);
-        priceAlertRepository.save(alert);
     }
 
+    @Transactional(readOnly = true)
     public List<AlertResponse> getAllAlerts(Long userId) {
-        List<PriceAlert> alerts = priceAlertRepository.findByUserId(userId);
-
-        return alerts.stream()
+        return priceAlertRepository.findEnabledByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -90,6 +80,7 @@ public class PriceAlertService {
                 alert.getId(),
                 alert.getUser().getId(),
                 alert.getAsset().getId(),
+                alert.getAsset().getTicker(),
                 alert.getTargetPrice()
         );
     }

@@ -6,6 +6,7 @@ public record AlertResponse(
         Long priceAlertId,
         Long userId,
         Long assetId,
+        String ticker,
         BigDecimal targetPrice
 ) {
 }

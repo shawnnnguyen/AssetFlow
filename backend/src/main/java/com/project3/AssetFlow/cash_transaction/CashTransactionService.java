@@ -68,7 +68,7 @@ public class CashTransactionService {
 
     private CashTransactionResponse mapToTransactionResponse(CashTransaction transaction) {
         return new CashTransactionResponse(
-                transaction.getUser().getId(),
+                transaction.getId(),
                 transaction.getPortfolio().getId(),
                 transaction.getType(),
                 transaction.getAmount(),
