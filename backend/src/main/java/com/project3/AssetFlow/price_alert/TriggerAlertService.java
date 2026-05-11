@@ -4,7 +4,8 @@ import com.project3.AssetFlow.price_alert.dto.AlertTriggeredResponse;
 import com.project3.AssetFlow.streaming.events.PriceUpdateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class TriggerAlertService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Async("alertNotificationExecutor")
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
