@@ -12,16 +12,17 @@ import com.project3.AssetFlow.identity.UserRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.portfolio.dto.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,28 +38,20 @@ public class PortfolioService {
     private final CurrencyRepository currencyRepository;
 
     public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
-
-        if (portfolios.isEmpty()) {
-            throw new IllegalStateException("User has no portfolios");
-        }
-
-        return portfolios.stream()
+        return portfolioRepository.findByUserId(userId).stream()
                 .map(this::mapToPortfolioResponse)
                 .toList();
     }
 
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
-        Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
-
-        return mapToPortfolioResponse(portfolio);
+        return mapToPortfolioResponse(getVerifiedPortfolio(userId, portfolioId));
     }
 
     @Transactional
     public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
-        boolean isExisting = portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name());
-
-        if (isExisting) throw new IllegalStateException("Portfolio with this name already exists");
+        if (portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Portfolio with this name already exists");
+        }
 
         User userProxy = userRepository.getReferenceById(userId);
         Portfolio newPortfolio = new Portfolio();
@@ -79,9 +72,9 @@ public class PortfolioService {
     }
 
     @Transactional
-    public Optional<PortfolioResponse> updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
-                                                               Long userId,
-                                                               Long portfolioId) {
+    public PortfolioResponse updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
+                                                     Long userId,
+                                                     Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         String portfolioCurrencyCode = portfolio.getCurrency().getCode();
 
@@ -93,22 +86,20 @@ public class PortfolioService {
         }
         if (requestedPortfolio.currencyCode() != null && !requestedPortfolio.currencyCode().equals(portfolioCurrencyCode)) {
             Currency newBaseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
-            BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
+            BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(
+                    portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
 
             portfolio.setCurrency(newBaseCurrency);
             portfolio.setCashBalance(convertedCashBalance);
-
             isChanged = true;
         }
 
-        if (!isChanged) {
-            return Optional.empty();
+        if (isChanged) {
+            portfolio.setUpdatedAt(Instant.now());
+            portfolioRepository.save(portfolio);
         }
 
-        portfolio.setUpdatedAt(Instant.now());
-        Portfolio savedPortfolio = portfolioRepository.save(portfolio);
-
-        return Optional.of(mapToPortfolioResponse(savedPortfolio));
+        return mapToPortfolioResponse(portfolio);
     }
 
     @Transactional
@@ -123,7 +114,6 @@ public class PortfolioService {
     public PortfolioPerformanceResponse calculatePortfolioPerformance(Portfolio portfolio,
                                                                       List<Holding> holdings,
                                                                       Map<Long, BigDecimal> livePrices) {
-
         if (holdings.isEmpty()) {
             return new PortfolioPerformanceResponse(
                     portfolio.getId(),
@@ -169,8 +159,8 @@ public class PortfolioService {
         );
     }
 
-    public PortfolioPerformanceResponse getPortfolioPerformance(Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId).orElseThrow();
+    public PortfolioPerformanceResponse getPortfolioPerformance(Long userId, Long portfolioId) {
+        Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         List<Holding> rawHoldings = holdingRepository.findByPortfolioId(portfolioId);
 
         Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
@@ -186,10 +176,10 @@ public class PortfolioService {
 
     public Portfolio getVerifiedPortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                .orElseThrow(() -> new IllegalStateException("Portfolio not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
 
         if (!portfolio.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("Portfolio does not belong to the user");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Portfolio does not belong to the user");
         }
         return portfolio;
     }

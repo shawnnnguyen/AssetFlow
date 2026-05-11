@@ -27,5 +27,6 @@ public interface PriceAlertRepository extends JpaRepository<PriceAlert, Long> {
             @Param("latestPrice") BigDecimal latestPrice
     );
 
-    List<PriceAlert> findByUserId(Long userId);
+    @Query("SELECT pa FROM PriceAlert pa JOIN FETCH pa.asset WHERE pa.user.id = :userId AND pa.enabled = true")
+    List<PriceAlert> findEnabledByUserId(@Param("userId") Long userId);
 }

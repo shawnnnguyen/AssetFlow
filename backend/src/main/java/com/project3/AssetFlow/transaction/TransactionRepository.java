@@ -15,12 +15,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                                                   Pageable pageable);
 
     @Query(value = """
-    SELECT * FROM transactions 
-    WHERE portfolio_id IS NULL OR portfolio_id = :portfolioId
-    AND asset_id IS NULL OR asset_id= :assetId
+    SELECT * FROM transactions
+    WHERE user_id = :userId
+    AND (:assetId IS NULL OR asset_id = :assetId)
+""", countQuery = """
+    SELECT COUNT(*) FROM transactions
+    WHERE user_id = :userId
+    AND (:assetId IS NULL OR asset_id = :assetId)
 """, nativeQuery = true)
     Page<Transaction> searchAllTransactions(
-            @Param("portfolioId") Long portfolioId,
+            @Param("userId") Long userId,
             @Param("assetId") Long assetId,
             Pageable pageable);
 }

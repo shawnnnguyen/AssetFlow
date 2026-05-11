@@ -8,7 +8,8 @@ import com.project3.AssetFlow.portfolio.dto.PortfolioPerformanceResponse;
 import com.project3.AssetFlow.streaming.events.PriceUpdateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,7 +37,7 @@ public class PortfolioStreamingService {
     private final Set<Long> pendingPortfolioIds = ConcurrentHashMap.newKeySet();
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(readOnly = true)
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 

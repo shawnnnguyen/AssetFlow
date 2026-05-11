@@ -21,8 +21,10 @@ public class FinnhubReconnectManager {
     private final WebSocketConnectionManager connectionManager;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private int currentRetryDelayMs = 1000;
+    private static final int INITIAL_RETRY_DELAY_MS = 1000;
     private static final int MAX_RETRY_DELAY_MS = 60000;
+
+    private int currentRetryDelayMs = INITIAL_RETRY_DELAY_MS;
 
     public FinnhubReconnectManager(WebSocketConnectionManager finnhubWebSocketClient) {
         this.connectionManager = finnhubWebSocketClient;
@@ -61,6 +63,6 @@ public class FinnhubReconnectManager {
     }
 
     public void resetBackoff() {
-        this.currentRetryDelayMs = 1000;
+        this.currentRetryDelayMs = INITIAL_RETRY_DELAY_MS;
     }
 }

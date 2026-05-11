@@ -11,8 +11,11 @@ import com.project3.AssetFlow.transaction.dto.TransactionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,31 +32,32 @@ public class TransactionService {
     private final CurrencyConversionService currencyConversionService;
 
     @Transactional
-    public TransactionResponse recordTransaction(TransactionRequest request) {
+    public TransactionResponse recordTransaction(Long userId, TransactionRequest request) {
         Asset asset = assetRepository.findById(request.assetId())
-                .orElseThrow();
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+
         Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
-                .orElseThrow();
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
+        verifyOwnership(portfolio, userId);
 
         Price executedPrice = priceRepository.findPriceAsOf(request.assetId(), request.executedAt())
-                .orElseThrow(() -> new IllegalStateException("No price found for asset " + request.assetId()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                        "No price data found for asset " + request.assetId() + " at the requested time"));
 
         BigDecimal cashBalance = portfolio.getCashBalance();
-        Holding updatedHolding = holdingRepository.findByPortfolioIdAndAssetIdForUpdate(request.portfolioId(), request.assetId());
+        Holding updatedHolding = holdingRepository.findByPortfolioIdAndAssetIdForUpdate(
+                request.portfolioId(), request.assetId());
 
         BigDecimal transactionValue = request.quantity().multiply(executedPrice.getPrice());
         BigDecimal transactionValueInPortfolioCurrency = currencyConversionService.convertCurrency(
-                asset.getCurrency().getCode(), portfolio.getCurrency().getCode(), transactionValue
-        );
-
+                asset.getCurrency().getCode(), portfolio.getCurrency().getCode(), transactionValue);
 
         if (request.type() == TransactionType.BUY) {
-            if(cashBalance.compareTo(transactionValueInPortfolioCurrency) < 0) {
-                throw new IllegalStateException("Insufficient cash balance");
+            if (cashBalance.compareTo(transactionValueInPortfolioCurrency) < 0) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Insufficient cash balance");
             }
 
             if (updatedHolding == null || updatedHolding.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-
                 if (updatedHolding == null) updatedHolding = new Holding();
                 updatedHolding.setPortfolio(portfolio);
                 updatedHolding.setAsset(asset);
@@ -63,21 +67,18 @@ public class TransactionService {
                 BigDecimal oldCost = updatedHolding.getQuantity().multiply(updatedHolding.getAvgCost());
                 BigDecimal newQuantity = updatedHolding.getQuantity().add(request.quantity());
                 BigDecimal newAvgCost = oldCost.add(transactionValue).divide(newQuantity, 4, RoundingMode.HALF_UP);
-
                 updatedHolding.setQuantity(newQuantity);
                 updatedHolding.setAvgCost(newAvgCost);
             }
 
             portfolio.setCashBalance(cashBalance.subtract(transactionValueInPortfolioCurrency));
             holdingRepository.save(updatedHolding);
-        }
-        else if (request.type() == TransactionType.SELL) {
-            if(updatedHolding == null || updatedHolding.getQuantity().compareTo(request.quantity()) < 0) {
-                throw new IllegalStateException("Insufficient holding quantity");
+        } else if (request.type() == TransactionType.SELL) {
+            if (updatedHolding == null || updatedHolding.getQuantity().compareTo(request.quantity()) < 0) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Insufficient holding quantity");
             }
 
             updatedHolding.setQuantity(updatedHolding.getQuantity().subtract(request.quantity()));
-
             portfolio.setCashBalance(cashBalance.add(transactionValueInPortfolioCurrency));
             holdingRepository.save(updatedHolding);
         }
@@ -96,37 +97,53 @@ public class TransactionService {
         return mapToTransactionResponse(newTransaction);
     }
 
+    public Page<TransactionResponse> getPortfolioTradingHistory(Long userId, Long portfolioId, Pageable pageable) {
+        verifyPortfolioOwnership(userId, portfolioId);
+        return transactionRepository.findByPortfolioId(portfolioId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+    public Page<TransactionResponse> getTradingHistoryForAsset(Long userId, Long portfolioId,
+                                                               String ticker, Pageable pageable) {
+        verifyPortfolioOwnership(userId, portfolioId);
+        Asset asset = assetRepository.findByTicker(ticker)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+        return transactionRepository.findByAssetIdAndPortfolioId(asset.getId(), portfolioId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
     public Page<TransactionResponse> getFullTradingsHistory(Long userId, String ticker, Pageable pageable) {
-        Asset asset = assetRepository.findByTicker(ticker)
-                .orElseThrow(() -> new IllegalStateException("Asset not found"));
-
-        Page<Transaction> history = transactionRepository.searchAllTransactions(userId, asset.getId(), pageable);
-
-        return history.map(this::mapToTransactionResponse);
+        Long assetId = null;
+        if (StringUtils.hasText(ticker)) {
+            assetId = assetRepository.findByTicker(ticker)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"))
+                    .getId();
+        }
+        return transactionRepository.searchAllTransactions(userId, assetId, pageable)
+                .map(this::mapToTransactionResponse);
     }
 
-    public Page<TransactionResponse> getPortfolioTradingHistory(Long portfolioId, Pageable pageable) {
-        Page<Transaction> history = transactionRepository.findByPortfolioId(portfolioId, pageable);
-
-        return history.map(this::mapToTransactionResponse);
-    }
-
-    public Page<TransactionResponse> getTradingHistoryForAsset(Long portfolioId,
-                                                               String ticker,
-                                                               Pageable pageable) {
-        Asset asset = assetRepository.findByTicker(ticker)
-                .orElseThrow(() -> new IllegalStateException("Asset not found"));
-
-        Page<Transaction> history = transactionRepository.findByAssetIdAndPortfolioId(asset.getId(), portfolioId, pageable);
-
-        return history.map(this::mapToTransactionResponse);
-    }
-
-    public TransactionResponse getTransactionById(Long transactionId) {
+    public TransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
+        verifyPortfolioOwnership(userId, portfolioId);
         Transaction transaction = transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new IllegalStateException("Transaction not found"));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (!transaction.getPortfolio().getId().equals(portfolioId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Transaction does not belong to this portfolio");
+        }
         return mapToTransactionResponse(transaction);
+    }
+
+    private void verifyPortfolioOwnership(Long userId, Long portfolioId) {
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
+        verifyOwnership(portfolio, userId);
+    }
+
+    private void verifyOwnership(Portfolio portfolio, Long userId) {
+        if (!portfolio.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Portfolio does not belong to the user");
+        }
     }
 
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
