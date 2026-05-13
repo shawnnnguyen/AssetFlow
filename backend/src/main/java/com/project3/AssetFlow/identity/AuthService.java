@@ -25,7 +25,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
-        // Fast-path check; DB unique constraints are the correctness guarantee
         if (userRepo.existsByUsername(request.username()) || userRepo.existsByEmail(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already exists");
         }
@@ -48,8 +47,11 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        User user = userRepo.findByEmail(request.email())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
         Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+                new UsernamePasswordAuthenticationToken(user.getUsername(), request.password())
         );
 
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();

@@ -1,10 +1,13 @@
 import { SearchIcon, PlusIcon, BellIcon, ArrowUpDownIcon } from '../shared/Icons';
 
-export default function DashboardHeader({ portfolioName, onFindTicker, onNewAlert, onRecordTransaction, onDeposit }) {
+export default function DashboardHeader({ title, onBack, onFindTicker, onNewAlert, onRecordTransaction, onDeposit }) {
   return (
     <div className="top">
       <div>
-        <div className="top-title">{portfolioName || 'AssetFlow'}</div>
+        {onBack && (
+          <button className="back-link" onClick={onBack}>← Portfolios</button>
+        )}
+        <div className="top-title">{title || 'Portfolios'}</div>
       </div>
       <div className="top-actions">
         {onFindTicker && (

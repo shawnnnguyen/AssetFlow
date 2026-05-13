@@ -10,9 +10,10 @@ export default function SummaryCards({ totalValue, sessionChange, priceHistory, 
         value={totalValue}
         sessionChange={sessionChange}
         priceHistory={priceHistory}
+        currencyCode={currencyCode}
       />
       <CashCard cash={cash} currencyCode={currencyCode} />
-      <AllTimeReturnCard returnPct={returnPct} absoluteReturn={absoluteReturn} />
+      <AllTimeReturnCard returnPct={returnPct} absoluteReturn={absoluteReturn} currencyCode={currencyCode} />
       <PortfolioStatusCard status={portfolioStatus} createdAt={portfolioCreatedAt} />
     </div>
   );

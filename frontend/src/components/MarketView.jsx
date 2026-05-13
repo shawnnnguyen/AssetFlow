@@ -1,44 +1,83 @@
-export default function MarketView({ trackedStocks = [], livePrices, dayChangePct, lastUpdatedAt }) {
+import { useState, useEffect, useRef } from 'react';
+import DataTable from './shared/DataTable';
+import { XIcon } from './shared/Icons';
+
+const COLS = [
+  { label: 'Ticker',     width: '1.8fr' },
+  { label: 'Industry',   width: '1.4fr' },
+  { label: 'Live price', width: '1fr', align: 'right' },
+  { label: '',           width: '2rem' },
+];
+
+function MarketRow({ s, livePrices, companyProfiles, onRemove }) {
+  const livePrice = typeof livePrices?.get === 'function' ? livePrices.get(s.ticker) : undefined;
+  const latestNum = Number(s.latestPrice);
+  const price     = (Number.isFinite(livePrice) ? livePrice : null)
+                 ?? (Number.isFinite(latestNum) ? latestNum : null);
+
+  const prevPriceRef = useRef(price);
+  const [flash, setFlash] = useState('');
+
+  useEffect(() => {
+    if (price == null || price === prevPriceRef.current) return;
+    const cls = price > prevPriceRef.current ? 'flash-pos' : 'flash-neg';
+    prevPriceRef.current = price;
+    setFlash(cls);
+    const t = setTimeout(() => setFlash(''), 600);
+    return () => clearTimeout(t);
+  }, [price]);
+
+  const flashStyle = flash
+    ? { background: flash === 'flash-pos' ? 'var(--pos-soft)' : 'var(--neg-soft)', transition: 'background var(--dur) var(--ease)' }
+    : { transition: 'background var(--dur) var(--ease)' };
+
+  const profile = companyProfiles[s.ticker];
+
   return (
-    <div className="panel">
-      <div className="phead">
-        <div>
-          <h2>Market</h2>
-          <div className="meta">
-            {trackedStocks.length} tracked
-            {lastUpdatedAt ? ` · ${lastUpdatedAt.toLocaleTimeString()}` : ' · connecting…'}
-          </div>
-        </div>
+    <>
+      <div className="gc" style={flashStyle}>
+        <div className="sym">{s.ticker}</div>
+        {profile?.name && <div className="holding-name">{profile.name}</div>}
       </div>
-
-      <div className="market-grid">
-        <div className="gh">Ticker</div>
-        <div className="gh r">Live price</div>
-        <div className="gh r">Session %</div>
+      <div className="gc" style={{ fontSize: '12.5px', color: 'var(--ink-3)', display: 'flex', alignItems: 'center', ...flashStyle }}>
+        {profile?.industry || '—'}
       </div>
+      <div className="gc r num" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', ...flashStyle }}>
+        {price != null
+          ? `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : '—'}
+      </div>
+      <div className="gc" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...flashStyle }}>
+        <button
+          className="alert-x"
+          title="Untrack"
+          onClick={() => onRemove?.(s.ticker)}
+        >
+          <XIcon size={12} />
+        </button>
+      </div>
+    </>
+  );
+}
 
-      {trackedStocks.length === 0 ? (
-        <div style={{ padding: '24px 20px', color: 'var(--ink-3)', fontSize: '13px' }}>
-          No tracked tickers. Use Find Ticker to start tracking.
-        </div>
-      ) : (
-        trackedStocks.map(s => {
-          const price = livePrices?.get(s.ticker) ?? Number(s.latestPrice ?? 0);
-          const pct   = dayChangePct?.get(s.ticker) ?? 0;
-          const pos   = pct >= 0;
-          return (
-            <div key={s.assetId} className="market-grid" style={{ display: 'contents' }}>
-              <div className="gc"><div className="sym">{s.ticker}</div></div>
-              <div className="gc r num">
-                ${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-              <div className={`gc r num ${pos ? 'pos' : 'neg'}`}>
-                {pos ? '+' : ''}{pct.toFixed(2)}%
-              </div>
-            </div>
-          );
-        })
+export default function MarketView({ trackedStocks = [], livePrices, lastUpdatedAt, companyProfiles = {}, onRemove }) {
+  const rows = trackedStocks.map(s => ({ ...s, id: s.assetId }));
+
+  return (
+    <DataTable
+      title="Market"
+      meta={`${trackedStocks.length} tracked${lastUpdatedAt ? ` · ${lastUpdatedAt.toLocaleTimeString()}` : ' · connecting…'}`}
+      columns={COLS}
+      rows={rows}
+      emptyMessage="No tracked tickers. Use Find Ticker to start tracking."
+      renderRow={s => (
+        <MarketRow
+          s={s}
+          livePrices={livePrices}
+          companyProfiles={companyProfiles}
+          onRemove={onRemove}
+        />
       )}
-    </div>
+    />
   );
 }

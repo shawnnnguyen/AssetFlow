@@ -9,6 +9,7 @@ public record PortfolioPerformanceResponse(
         Long portfolioId,
         BigDecimal totalInvestedValue,
         BigDecimal portfolioValue,
+        BigDecimal cashBalance,
         PerformanceMetrics metrics,
         List<HoldingPerformance> holdings
 ) {

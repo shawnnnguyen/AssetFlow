@@ -5,6 +5,7 @@ import com.project3.AssetFlow.holdings.HoldingRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.portfolio.dto.PortfolioPerformanceResponse;
+import com.project3.AssetFlow.streaming.events.PortfolioCashChangedEvent;
 import com.project3.AssetFlow.streaming.events.PriceUpdateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -38,7 +40,7 @@ public class PortfolioStreamingService {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
         try {
@@ -51,6 +53,11 @@ public class PortfolioStreamingService {
          } catch (Exception e) {
              log.error("Error calculating portfolio performance", e);
          }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleCashBalanceChanged(PortfolioCashChangedEvent event) {
+        pendingPortfolioIds.add(event.portfolioId());
     }
 
     @Scheduled(fixedRate = 1000)

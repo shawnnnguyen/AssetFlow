@@ -4,11 +4,15 @@ import com.project3.AssetFlow.cash_transaction.dto.CashTransactionRequest;
 import com.project3.AssetFlow.cash_transaction.dto.CashTransactionResponse;
 import com.project3.AssetFlow.portfolio.Portfolio;
 import com.project3.AssetFlow.portfolio.PortfolioRepository;
+import com.project3.AssetFlow.streaming.events.PortfolioCashChangedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -19,12 +23,17 @@ public class CashTransactionService {
 
     private final CashTransactionRepository cashTransactionRepository;
     private final PortfolioRepository portfolioRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public CashTransactionResponse recordCashTransaction(CashTransactionRequest request) {
+    public CashTransactionResponse recordCashTransaction(Long userId, CashTransactionRequest request) {
 
         Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
-                .orElseThrow();
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
+
+        if (!portfolio.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Portfolio does not belong to the current user");
+        }
 
         BigDecimal cashBalance = portfolio.getCashBalance();
 
@@ -33,12 +42,13 @@ public class CashTransactionService {
 
             case WITHDRAWAL -> {
                 if (cashBalance.compareTo(request.amount()) < 0) {
-                    throw new IllegalStateException("Insufficient cash balance for withdrawal");
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient cash balance for withdrawal");
                 }
                 portfolio.setCashBalance(cashBalance.subtract(request.amount()));
             }
 
-            default -> throw new IllegalArgumentException("Unsupported transaction type: " + request.type());
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unsupported transaction type: " + request.type());
         }
 
         CashTransaction newTransaction = new CashTransaction();
@@ -50,19 +60,35 @@ public class CashTransactionService {
 
         cashTransactionRepository.save(newTransaction);
 
+        eventPublisher.publishEvent(new PortfolioCashChangedEvent(portfolio.getId()));
+
         return mapToTransactionResponse(newTransaction);
     }
 
-    public Page<CashTransactionResponse> getTransactionsByPortfolio(Long portfolioId, Pageable pageable) {
-        Page<CashTransaction> transactions = cashTransactionRepository.findByPortfolioId(portfolioId, pageable);
-
-        return transactions.map(this::mapToTransactionResponse);
+    public Page<CashTransactionResponse> getAllCashTransactions(Long userId, Pageable pageable) {
+        return cashTransactionRepository.findByUserId(userId, pageable)
+                .map(this::mapToTransactionResponse);
     }
 
-    public CashTransactionResponse getTransactionById(Long transactionId) {
-        CashTransaction transaction = cashTransactionRepository.findById(transactionId)
-                .orElseThrow(() -> new IllegalStateException("Transaction not found"));
+    public Page<CashTransactionResponse> getTransactionsByPortfolio(Long userId, Long portfolioId, Pageable pageable) {
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
+        if (!portfolio.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Portfolio does not belong to the current user");
+        }
+        return cashTransactionRepository.findByPortfolioId(portfolioId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
 
+    public CashTransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
+        CashTransaction transaction = cashTransactionRepository.findById(transactionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+        if (!transaction.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Transaction does not belong to the current user");
+        }
+        if (!transaction.getPortfolio().getId().equals(portfolioId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found in this portfolio");
+        }
         return mapToTransactionResponse(transaction);
     }
 

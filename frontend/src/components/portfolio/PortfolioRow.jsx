@@ -1,27 +1,24 @@
-import { ChevronIcon } from '../shared/Icons';
-
 export default function PortfolioRow({ portfolio, onClick }) {
-  const { id, name, currencyCode, cashBalance, portfolioValue = 0, returnPct = 0 } = portfolio;
-  const pos = returnPct >= 0;
+  const { id, name, currencyCode, currency, cashBalance, portfolioValue } = portfolio;
+  const displayCurrency = currencyCode ?? currency ?? 'USD';
+  const totalValue = portfolioValue || cashBalance || 0;
+  let formattedValue;
+  try {
+    formattedValue = new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalValue);
+  } catch {
+    formattedValue = `${displayCurrency} ${totalValue.toFixed(2)}`;
+  }
 
   return (
-    <div className="portfolio-grid" style={{ display: 'contents', cursor: 'pointer' }} onClick={() => onClick(id)}>
+    <div className="dt-row-click" onClick={() => onClick?.(id)}>
       <div className="gc">
-        <div className="sym">{name}</div>
-        <div className="holding-name">{currencyCode ?? 'USD'}</div>
+        <span style={{ fontWeight: 500, fontSize: '13.5px' }}>{name}</span>
       </div>
       <div className="gc r num">
-        ${(portfolioValue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {formattedValue}
       </div>
-      <div className="gc r num">
-        ${(cashBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </div>
-      <div className={`gc r num ${pos ? 'pos' : 'neg'}`}>
-        {pos ? '+' : ''}{returnPct.toFixed(2)}%
-      </div>
-      <div className="gc r" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{currencyCode ?? 'USD'}</div>
-      <div className="gc" style={{ display: 'flex', alignItems: 'center' }}>
-        <ChevronIcon size={14} style={{ color: 'var(--ink-3)' }} />
+      <div className="gc r" style={{ fontSize: '12px', color: 'var(--ink-3)' }}>
+        {displayCurrency}
       </div>
     </div>
   );

@@ -4,11 +4,14 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const [mode, setMode]         = useState('login');
-  const [username, setUsername] = useState('');
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [username, setUsername]     = useState('');
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -16,10 +19,14 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    if (mode === 'login' && !EMAIL_RE.test(loginEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     setLoading(true);
     try {
       const fn  = mode === 'login' ? login : register;
-      const res = await fn(mode === 'login' ? { username, password } : { username, email, password });
+      const res = await fn(mode === 'login' ? { email: loginEmail, password } : { username, email, password });
       if (res.token) {
         navigate('/dashboard');
       } else {
@@ -50,28 +57,42 @@ export default function LoginPage() {
         {error && <div className="login-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="login-field">
-            <label>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="your username"
-              required
-              autoFocus
-            />
-          </div>
-          {mode === 'register' && (
+          {mode === 'login' ? (
             <div className="login-field">
               <label>Email</label>
               <input
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoFocus
               />
             </div>
+          ) : (
+            <>
+              <div className="login-field">
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="your username"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="login-field">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </>
           )}
           <div className="login-field">
             <label>Password</label>
@@ -90,9 +111,9 @@ export default function LoginPage() {
 
         <div className="login-toggle">
           {mode === 'login' ? (
-            <>No account?{' '}<button onClick={() => { setMode('register'); setError(''); setEmail(''); }}>Register</button></>
+            <>No account?{' '}<button onClick={() => { setMode('register'); setError(''); setLoginEmail(''); }}>Register</button></>
           ) : (
-            <>Already have an account?{' '}<button onClick={() => { setMode('login'); setError(''); setEmail(''); }}>Sign in</button></>
+            <>Already have an account?{' '}<button onClick={() => { setMode('login'); setError(''); setEmail(''); setUsername(''); }}>Sign in</button></>
           )}
         </div>
       </div>

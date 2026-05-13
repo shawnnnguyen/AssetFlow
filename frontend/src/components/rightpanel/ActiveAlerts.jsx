@@ -1,6 +1,6 @@
 import AlertRow from './AlertRow';
 
-export default function ActiveAlerts({ alerts = [], onDelete }) {
+export default function ActiveAlerts({ alerts = [], onDelete, onUpdate }) {
   return (
     <div className="rail-section">
       <div className="rail-lbl">Active alerts ({alerts.length})</div>
@@ -9,7 +9,7 @@ export default function ActiveAlerts({ alerts = [], onDelete }) {
       ) : (
         <div className="alert-list">
           {alerts.map(a => (
-            <AlertRow key={a.id} alert={a} onDelete={onDelete} />
+            <AlertRow key={a.id} alert={a} onDelete={onDelete} onUpdate={onUpdate} />
           ))}
         </div>
       )}

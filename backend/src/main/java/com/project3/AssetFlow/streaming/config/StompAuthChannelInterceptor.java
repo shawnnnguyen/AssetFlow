@@ -11,8 +11,10 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 
 @Slf4j
@@ -63,6 +65,11 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             }
             sessionAttrs.put(SESSION_USERNAME, username);
             sessionAttrs.put(SESSION_USER_ID, userId);
+
+            // Attach a Principal so convertAndSendToUser can route to this session.
+            // The name must match the first arg passed to convertAndSendToUser (String.valueOf(userId)).
+            accessor.setUser(new UsernamePasswordAuthenticationToken(
+                    String.valueOf(userId), null, Collections.emptyList()));
 
         } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             String destination = accessor.getDestination();

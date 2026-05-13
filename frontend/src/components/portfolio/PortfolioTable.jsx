@@ -1,34 +1,26 @@
+import DataTable from '../shared/DataTable';
 import PortfolioRow from './PortfolioRow';
 
+const COLS = [
+  { label: 'Portfolio',   width: '1.8fr' },
+  { label: 'Total value', width: '1fr',   align: 'right' },
+  { label: 'Currency',    width: '0.6fr', align: 'right' },
+];
+
 export default function PortfolioTable({ portfolios = [], performanceMap = {}, onSelect, onNew }) {
+  const rows = portfolios.map(p => ({ id: p.id, ...p, ...performanceMap[p.id] }));
+
   return (
-    <div className="panel">
-      <div className="phead">
-        <div>
-          <h2>Portfolios</h2>
-          <div className="meta">{portfolios.length} portfolio{portfolios.length !== 1 ? 's' : ''}</div>
-        </div>
-        {onNew && (
-          <button className="btn" onClick={onNew} style={{ fontSize: 12 }}>+ New portfolio</button>
-        )}
-      </div>
-
-      <div className="portfolio-grid">
-        <div className="gh">Name</div>
-        <div className="gh r">Value</div>
-        <div className="gh r">Cash</div>
-        <div className="gh r">Return</div>
-        <div className="gh r">Currency</div>
-        <div className="gh" />
-      </div>
-
-      {portfolios.map(p => (
-        <PortfolioRow
-          key={p.id}
-          portfolio={{ ...p, ...performanceMap[p.id] }}
-          onClick={onSelect}
-        />
-      ))}
-    </div>
+    <DataTable
+      title="Portfolios"
+      meta={`${portfolios.length} portfolio${portfolios.length !== 1 ? 's' : ''}`}
+      columns={COLS}
+      rows={rows}
+      emptyMessage="No portfolios yet. Create one to get started."
+      headerActions={onNew && (
+        <button className="btn" onClick={onNew} style={{ fontSize: 12 }}>+ New portfolio</button>
+      )}
+      renderRow={p => <PortfolioRow portfolio={p} onClick={onSelect} />}
+    />
   );
 }
