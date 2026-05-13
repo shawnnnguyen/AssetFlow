@@ -8,5 +8,5 @@ import java.math.BigDecimal;
 public record UpdateAlertRequest(
 
         @NotNull @Positive
-        BigDecimal newTargetPrice) {
+        BigDecimal targetPrice) {
 }

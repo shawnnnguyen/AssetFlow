@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 
 public record NewPortfolioResponse(
         Long id,
-        Long userId,
         String name,
         PortfolioStatusType status,
         String currencyCode,

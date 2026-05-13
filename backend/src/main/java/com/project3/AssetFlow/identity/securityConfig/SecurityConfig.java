@@ -32,6 +32,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         // SockJS HTTP handshake cannot carry an Authorization header
                         .requestMatchers("/ws-market/**", "/ws-alerts/**").permitAll()
+                        // Reference data — no user-specific information
+                        .requestMatchers("/currencies").permitAll()
                         // Springdoc Swagger UI
                         .requestMatchers("/swagger", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         .anyRequest().authenticated()

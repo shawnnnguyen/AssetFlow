@@ -48,8 +48,11 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        User user = userRepo.findByEmail(request.email())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
         Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+                new UsernamePasswordAuthenticationToken(user.getUsername(), request.password())
         );
 
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();

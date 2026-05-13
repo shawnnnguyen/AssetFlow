@@ -50,7 +50,7 @@ public class PriceAlertService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found");
         }
 
-        alert.setTargetPrice(request.newTargetPrice());
+        alert.setTargetPrice(request.targetPrice());
 
         return mapToResponse(alert);
     }

@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -26,7 +27,7 @@ public class TriggerAlertService {
 
     @Async("alertNotificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {
 
         List<PriceAlert> triggeredAlerts = alertRepository.findTriggeredAlerts(

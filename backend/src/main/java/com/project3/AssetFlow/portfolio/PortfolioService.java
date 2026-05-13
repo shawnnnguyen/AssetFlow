@@ -119,6 +119,7 @@ public class PortfolioService {
                     portfolio.getId(),
                     BigDecimal.ZERO,
                     portfolio.getCashBalance(),
+                    portfolio.getCashBalance(),
                     new PerformanceMetrics(BigDecimal.ZERO, BigDecimal.ZERO),
                     List.of()
             );
@@ -154,6 +155,7 @@ public class PortfolioService {
                 portfolio.getId(),
                 totalInvestment,
                 portfolioValue,
+                portfolio.getCashBalance(),
                 new PerformanceMetrics(absoluteChange, percentageChange),
                 holdingPerformances
         );
@@ -187,7 +189,6 @@ public class PortfolioService {
     private NewPortfolioResponse mapToNewPortfolioResponse(Portfolio portfolio) {
         return new NewPortfolioResponse(
                 portfolio.getId(),
-                portfolio.getUser().getId(),
                 portfolio.getName(),
                 portfolio.getStatus(),
                 portfolio.getCurrency().getCode(),
@@ -199,7 +200,9 @@ public class PortfolioService {
                 portfolio.getId(),
                 portfolio.getName(),
                 portfolio.getCurrency().getCode(),
-                portfolio.getCashBalance()
+                portfolio.getCashBalance(),
+                portfolio.getStatus() != null ? portfolio.getStatus().name() : "ACTIVE",
+                portfolio.getCreatedAt()
         );
     }
 }
