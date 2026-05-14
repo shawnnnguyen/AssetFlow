@@ -3,6 +3,7 @@ package com.project3.AssetFlow.market.dto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Component
 public class FinnhubClient {
@@ -19,14 +20,18 @@ public class FinnhubClient {
     }
 
     public AssetInfoDTO getCompanyProfile (String ticker) {
-        AssetInfoDTO result = restClient.get()
-                                        .uri(uriBuilder -> uriBuilder
-                                                .path("/stock/profile2")
-                                                .queryParam("symbol", ticker)
-                                                .build())
-                                        .retrieve()
-                                        .body(AssetInfoDTO.class);
+        try {
+            AssetInfoDTO result = restClient.get()
+                                            .uri(uriBuilder -> uriBuilder
+                                                    .path("/stock/profile2")
+                                                    .queryParam("symbol", ticker)
+                                                    .build())
+                                            .retrieve()
+                                            .body(AssetInfoDTO.class);
 
-        return (result != null && result.name() != null) ? result : null;
+            return (result != null && result.name() != null) ? result : null;
+        } catch (RestClientResponseException e) {
+            return null;
+        }
     }
 }
