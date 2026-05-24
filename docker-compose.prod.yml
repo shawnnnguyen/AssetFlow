@@ -16,7 +16,7 @@ services:
       retries: 5
 
   backend:
-    image: ghcr.io/shawnnnguyen/assetflow-be:latest
+    image: ghcr.io/shawnnnguyen/assetflow-be:${IMAGE_TAG:-latest}
     container_name: spring_app
     restart: unless-stopped
     ports:
@@ -38,7 +38,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: ghcr.io/shawnnnguyen/assetflow-fe:latest
+    image: ghcr.io/shawnnnguyen/assetflow-fe:${IMAGE_TAG:-latest}
     container_name: react_app
     restart: unless-stopped
     ports:

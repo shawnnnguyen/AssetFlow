@@ -1,0 +1,69 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Commit SHA of the image tag to roll back to (must already be published to GHCR)"
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Validate commit SHA
+        run: |
+          if ! [[ "${{ inputs.commit_sha }}" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "Invalid commit SHA: ${{ inputs.commit_sha }}"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify images exist for SHA
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker manifest inspect ghcr.io/shawnnnguyen/assetflow-be:${{ inputs.commit_sha }} > /dev/null
+          docker manifest inspect ghcr.io/shawnnnguyen/assetflow-fe:${{ inputs.commit_sha }} > /dev/null
+
+      - name: Copy compose file to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/assetflow"
+
+      - name: Rollback on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ inputs.commit_sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE_TAG
+          script: |
+            cd ~/assetflow
+
+            # Write .env from secret
+            cat > .env << 'ENVEOF'
+            ${{ secrets.VPS_ENV }}
+            ENVEOF
+
+            # Pin the rollback image tag
+            grep -v '^IMAGE_TAG=' .env > .env.tmp && mv .env.tmp .env
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+
+            echo "Rolling back to ${IMAGE_TAG}"
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            docker image prune -f
