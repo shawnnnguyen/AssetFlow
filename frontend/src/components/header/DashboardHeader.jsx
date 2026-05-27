@@ -7,7 +7,7 @@ export default function DashboardHeader({ title, onBack, onFindTicker, onNewAler
         {onBack && (
           <button className="back-link" onClick={onBack}>← Portfolios</button>
         )}
-        <div className="top-title">{'Docker shit'}</div>
+        <div className="top-title">{title || 'Portfolios'}</div>
       </div>
       <div className="top-actions">
         {onFindTicker && (
