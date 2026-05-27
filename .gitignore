@@ -36,3 +36,6 @@ build/
 ### Claude Code (local only) ###
 .claude/
 CLAUDE.md
+
+monitor/secrets/scrape_username
+monitor/secrets/scrape_password

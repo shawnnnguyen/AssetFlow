@@ -32,13 +32,13 @@ jobs:
           docker manifest inspect ghcr.io/shawnnnguyen/assetflow-be:${{ inputs.commit_sha }} > /dev/null
           docker manifest inspect ghcr.io/shawnnnguyen/assetflow-fe:${{ inputs.commit_sha }} > /dev/null
 
-      - name: Copy compose file to VPS
+      - name: Copy files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,monitor"
           target: "~/assetflow"
 
       - name: Rollback on VPS
@@ -62,8 +62,33 @@ jobs:
             grep -v '^IMAGE_TAG=' .env > .env.tmp && mv .env.tmp .env
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
 
+            # Create Prometheus secret files from .env (keeps files in sync with env vars)
+            # sed strips optional surrounding single/double quotes from values
+            mkdir -p monitor/secrets
+            PROM_USER=$(grep '^PROMETHEUS_SCRAPE_USERNAME=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            PROM_PASS=$(grep '^PROMETHEUS_SCRAPE_PASSWORD=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            printf '%s' "$PROM_USER" > monitor/secrets/scrape_username
+            printf '%s' "$PROM_PASS" > monitor/secrets/scrape_password
+            chmod 600 monitor/secrets/scrape_username monitor/secrets/scrape_password
+
             echo "Rolling back to ${IMAGE_TAG}"
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml --profile monitoring pull
+            docker compose -f docker-compose.prod.yml --profile monitoring up -d --remove-orphans
+
+            # Ensure monitoring DB role exists — idempotent, safe on existing volumes
+            DB_USER=$(grep '^DB_USERNAME=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            DB_NM=$(grep '^DB_NAME=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            MON_USER=$(grep '^MONITOR_DB_USERNAME=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            MON_PASS=$(grep '^MONITOR_DB_PASSWORD=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
+            MON_USER="${MON_USER:-monitoring}"
+            ROLE_EXISTS=$(docker exec postgres_db psql -tA -U "$DB_USER" -d "$DB_NM" \
+              -c "SELECT 1 FROM pg_roles WHERE rolname = '$MON_USER';" 2>/dev/null || echo "")
+            if [ -z "$ROLE_EXISTS" ]; then
+              docker exec postgres_db psql -U "$DB_USER" -d "$DB_NM" \
+                -c "CREATE ROLE \"$MON_USER\" WITH LOGIN PASSWORD '$MON_PASS';" \
+                -c "GRANT pg_monitor TO \"$MON_USER\";" \
+                -c "GRANT CONNECT ON DATABASE \"$DB_NM\" TO \"$MON_USER\";" 2>/dev/null \
+                || echo "WARNING: Could not create monitoring role. Run manually if needed."
+            fi
 
             docker image prune -f
