@@ -153,7 +153,7 @@ jobs:
             PROM_PASS=$(grep '^PROMETHEUS_SCRAPE_PASSWORD=' .env | cut -d'=' -f2- | sed "s/^['\"]//;s/['\"]$//")
             printf '%s' "$PROM_USER" > monitor/secrets/scrape_username
             printf '%s' "$PROM_PASS" > monitor/secrets/scrape_password
-            chmod 600 monitor/secrets/scrape_username monitor/secrets/scrape_password
+            chmod 644 monitor/secrets/scrape_username monitor/secrets/scrape_password
 
             # Pull pinned images and restart (monitoring profile included)
             docker compose -f docker-compose.prod.yml --profile monitoring pull
