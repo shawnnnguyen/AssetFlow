@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { XIcon } from '../shared/Icons';
 import { api } from '../../api';
@@ -17,6 +17,13 @@ export default function NewPriceAlertModal({ trackedStocks = [], onClose, onCrea
   const [targetPrice, setTargetPrice] = useState('');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
+
+  useEffect(() => {
+    const first = trackedStocks[0]?.ticker;
+    if (first !== undefined && (ticker === '' || !tickers.includes(ticker))) {
+      setTicker(first);
+    }
+  }, [trackedStocks]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -16,7 +16,13 @@ export function useLivePrices(token: string | null): UseLivePricesReturn {
   const baselineRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
-    if (!lastPrice?.ticker || !lastPrice?.price) return;
+    baselineRef.current = new Map();
+    setPrices(new Map());
+    setDayChangePct(new Map());
+  }, [token]);
+
+  useEffect(() => {
+    if (!lastPrice?.ticker || lastPrice.price == null) return;
     const { ticker, price } = lastPrice;
 
     if (!baselineRef.current.has(ticker)) {

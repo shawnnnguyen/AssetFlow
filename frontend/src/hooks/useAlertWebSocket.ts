@@ -19,11 +19,14 @@ export function useAlertWebSocket(userId: string | null, token: string | null): 
   useEffect(() => {
     if (!userId || !token) return;
 
+    let cancelled = false;
+
     const client = new Client({
       webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-alerts`),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => {
+        if (cancelled) return;
         subRef.current = client.subscribe(`/topic/alerts/${userId}`, msg => {
           const alert = parseMessage<TriggeredAlert>(msg);
           setTriggeredAlerts(prev => [alert, ...prev].slice(0, 5));
@@ -34,7 +37,9 @@ export function useAlertWebSocket(userId: string | null, token: string | null): 
     clientRef.current = client;
 
     return () => {
+      cancelled = true;
       subRef.current?.unsubscribe();
+      subRef.current = null;
       void client.deactivate();
     };
   }, [userId, token]);

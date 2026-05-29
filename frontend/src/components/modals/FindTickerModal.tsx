@@ -34,8 +34,12 @@ export default function FindTickerModal({ onClose }: FindTickerModalProps) {
 
   async function handleTrack() {
     if (!profile) return;
-    await api.market.addTracking(profile.ticker);
-    setTracked(true);
+    try {
+      await api.market.addTracking(profile.ticker);
+      setTracked(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to track ticker');
+    }
   }
 
   return (

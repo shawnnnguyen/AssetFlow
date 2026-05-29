@@ -7,22 +7,25 @@ export function usePortfolios(userId: string | null) {
   const [currentPortfolioId, setCurrentPortfolioId] = useState<number | null>(null);
   const currentPortfolioIdRef = useRef<number | null>(null);
 
-  // Keep ref in sync so async callbacks can detect a portfolio switch.
-  useEffect(() => {
-    currentPortfolioIdRef.current = currentPortfolioId;
-  }, [currentPortfolioId]);
+  // Synchronously keeps ref in sync so async callbacks detect a portfolio switch
+  // without a one-render lag (an async useEffect would miss the window between
+  // setState and the next commit).
+  function setPortfolioId(id: number | null) {
+    currentPortfolioIdRef.current = id;
+    setCurrentPortfolioId(id);
+  }
 
   useEffect(() => {
     if (!userId) return;
     setPortfolios([]);
-    setCurrentPortfolioId(null);
+    setPortfolioId(null);
     let stale = false;
     void api.portfolios.getAll()
       .then(pfs => {
         if (stale) return;
         setPortfolios(pfs);
         const first = pfs[0];
-        if (first !== undefined) setCurrentPortfolioId(first.id);
+        if (first !== undefined) setPortfolioId(first.id);
       })
       .catch(console.error);
     return () => { stale = true; };
@@ -31,7 +34,7 @@ export function usePortfolios(userId: string | null) {
   const currentPortfolio = portfolios.find(p => p.id === currentPortfolioId);
 
   async function handleSelectPortfolio(id: number) {
-    setCurrentPortfolioId(id);
+    setPortfolioId(id);
     try {
       const fresh = await api.portfolios.getById(id);
       setPortfolios(prev => prev.map(p => p.id === fresh.id ? { ...p, ...fresh } : p));
@@ -44,7 +47,7 @@ export function usePortfolios(userId: string | null) {
     portfolios,
     setPortfolios,
     currentPortfolioId,
-    setCurrentPortfolioId,
+    setCurrentPortfolioId: setPortfolioId,
     currentPortfolio,
     currentPortfolioIdRef,
     handleSelectPortfolio,

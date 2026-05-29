@@ -21,11 +21,14 @@ export function usePortfolioWebSocket(
   useEffect(() => {
     if (!token || !portfolioId) return;
 
+    let cancelled = false;
+
     const client = new Client({
       webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-market`),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => {
+        if (cancelled) return;
         subRef.current = client.subscribe(
           `/user/queue/portfolio/${portfolioId}`,
           msg => setPortfolioPerf(parseMessage<PortfolioPerf>(msg)),
@@ -36,7 +39,9 @@ export function usePortfolioWebSocket(
     client.activate();
 
     return () => {
+      cancelled = true;
       subRef.current?.unsubscribe();
+      subRef.current = null;
       void client.deactivate();
     };
   }, [token, portfolioId]);

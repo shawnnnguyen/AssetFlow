@@ -77,7 +77,15 @@ export default function DashboardPage() {
         .map(a => a.priceAlertId ?? a.alertId)
         .filter((id): id is number => id !== undefined),
     );
-    alertsHook.setAlerts(prev => prev.filter(a => !firedIds.has(a.id)));
+    // Fallback: if a triggered alert carried neither ID field, match by ticker.
+    const firedTickers = new Set(
+      triggeredAlerts
+        .filter(a => a.priceAlertId === undefined && a.alertId === undefined && a.ticker !== undefined)
+        .map(a => a.ticker as string),
+    );
+    alertsHook.setAlerts(prev =>
+      prev.filter(a => !firedIds.has(a.id) && !firedTickers.has(a.ticker))
+    );
   }, [triggeredAlerts]);
 
   // ── Reset to list view on nav change ───────────────────────────────────
@@ -107,7 +115,9 @@ export default function DashboardPage() {
   const { currentPortfolio, currentPortfolioId } = portfoliosHook;
   const currencyCode   = currentPortfolio?.currencyCode ?? 'USD';
   const cash           = Number(currentPortfolio?.cashBalance ?? 0);
-  const totalValue     = livePortfolioValue || Number(holdingsHook.performance?.portfolioValue ?? 0);
+  // Use live-computed value once performance data has loaded (even if it's 0).
+  // Before load, show 0 so the card isn't stale from a previous portfolio.
+  const totalValue     = holdingsHook.performance !== null ? livePortfolioValue : 0;
   const totalInvested  = Number(holdingsHook.performance?.totalInvestedValue ?? 0);
   const absoluteReturn = totalInvested ? totalValue - totalInvested : 0;
   const returnPct      = totalInvested ? (absoluteReturn / totalInvested) * 100 : 0;

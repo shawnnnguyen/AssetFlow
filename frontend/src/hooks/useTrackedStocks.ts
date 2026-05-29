@@ -67,9 +67,15 @@ export function useTrackedStocks(userId: string | null) {
   async function handleRemoveTracking(ticker: string) {
     try {
       await api.market.removeTracking(ticker);
+      const removed = trackedStocks.find(s => s.ticker === ticker);
       const next = trackedStocks.filter(s => s.ticker !== ticker);
       setTrackedStocks(next);
       setTrackedCount(next.length);
+      if (removed) {
+        const updated = { ...trackedStocksRef.current };
+        delete updated[removed.assetId];
+        trackedStocksRef.current = updated;
+      }
     } catch (e) {
       console.error('Failed to untrack', ticker, e);
     }
