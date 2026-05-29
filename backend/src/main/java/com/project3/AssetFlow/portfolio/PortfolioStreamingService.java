@@ -72,6 +72,7 @@ public class PortfolioStreamingService {
 
         Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
                 .stream()
+                .filter(s -> s.latestPrice() != null)
                 .collect(Collectors.toMap(
                         TrackedStocksDTO::assetId,
                         TrackedStocksDTO::latestPrice,
