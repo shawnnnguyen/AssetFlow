@@ -57,6 +57,7 @@ public class PortfolioService {
         Portfolio newPortfolio = new Portfolio();
 
         Currency baseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+        if (baseCurrency == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Currency not found: " + requestedPortfolio.currencyCode());
 
         newPortfolio.setUser(userProxy);
         newPortfolio.setName(requestedPortfolio.name());
@@ -86,6 +87,8 @@ public class PortfolioService {
         }
         if (requestedPortfolio.currencyCode() != null && !requestedPortfolio.currencyCode().equals(portfolioCurrencyCode)) {
             Currency newBaseCurrency = currencyRepository.findByCode(requestedPortfolio.currencyCode());
+
+            if (newBaseCurrency == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Currency not found: " + requestedPortfolio.currencyCode());
             BigDecimal convertedCashBalance = currencyConversionService.convertCurrency(
                     portfolioCurrencyCode, requestedPortfolio.currencyCode(), portfolio.getCashBalance());
 
