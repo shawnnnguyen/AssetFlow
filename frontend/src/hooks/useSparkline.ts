@@ -26,10 +26,10 @@ export function useSparkline(
   useEffect(() => {
     if (seededRef.current || initialPortfolioValue === null || initialPortfolioValue <= 0) return;
     seededRef.current          = true;
-    priceHistoryRef.current    = [initialPortfolioValue];
+    priceHistoryRef.current    = [initialPortfolioValue, initialPortfolioValue];
     lastPushRef.current        = Date.now();
     sessionBaselineRef.current = initialPortfolioValue;
-    setSparklineData([initialPortfolioValue]);
+    setSparklineData([initialPortfolioValue, initialPortfolioValue]);
   }, [initialPortfolioValue]);
 
   // Throttled live update: minimum 2 s between pushes, cap at 60 entries.
@@ -46,9 +46,5 @@ export function useSparkline(
     setSparklineData([...updated]);
   }, [livePortfolioValue, holdingsCount]);
 
-  const sessionChange = sessionBaselineRef.current !== null
-    ? livePortfolioValue - sessionBaselineRef.current
-    : 0;
-
-  return { sparklineData, sessionChange };
+  return { sparklineData };
 }
