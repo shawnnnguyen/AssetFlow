@@ -172,7 +172,6 @@ export default function DashboardPage() {
           <>
             <SummaryCards
               totalValue={totalValue}
-              sessionChange={sparkline.sessionChange}
               priceHistory={sparkline.sparklineData}
               cash={cash}
               currencyCode={currencyCode}

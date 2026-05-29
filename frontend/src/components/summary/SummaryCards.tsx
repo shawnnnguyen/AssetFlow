@@ -2,7 +2,6 @@ import Sparkline from '../shared/Sparkline';
 
 interface SummaryCardsProps {
   totalValue: number;
-  sessionChange: number;
   priceHistory: number[];
   cash: number;
   currencyCode: string;
@@ -20,29 +19,20 @@ function fmt(value: number, currency: string) {
 
 export default function SummaryCards({
   totalValue,
-  sessionChange,
   priceHistory,
   cash,
   currencyCode,
   returnPct,
   absoluteReturn,
 }: SummaryCardsProps) {
-  const sessionPos = sessionChange >= 0;
-  const returnPos  = returnPct >= 0;
+  const returnPos = returnPct >= 0;
 
   return (
     <div className="kpis">
       <div className="kpi live">
         <div className="kpi-lbl">Portfolio value</div>
         <div className="kpi-val">{fmt(totalValue, currencyCode)}</div>
-        <Sparkline data={priceHistory} color={sessionPos ? 'var(--pos)' : 'var(--neg)'} />
-      </div>
-
-      <div className="kpi">
-        <div className="kpi-lbl">Session change</div>
-        <div className={`kpi-val ${sessionPos ? 'pos' : 'neg'}`}>
-          {sessionPos ? '+' : ''}{fmt(sessionChange, currencyCode)}
-        </div>
+        <Sparkline data={priceHistory} color={returnPos ? 'var(--pos)' : 'var(--neg)'} />
       </div>
 
       <div className="kpi">
