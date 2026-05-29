@@ -1,7 +1,9 @@
 package com.project3.AssetFlow.currency;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,7 +40,8 @@ public class CurrencyConversionService {
         ExchangeRate toUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), "USD");
         ExchangeRate fromUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode("USD", toCurrency.toUpperCase());
         if (toUsd == null || fromUsd == null) {
-            throw new IllegalStateException("No exchange rate path found for " + fromCurrency + " to " + toCurrency);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "No exchange rate path found for " + fromCurrency + " to " + toCurrency);
         }
         BigDecimal calculatedRate = toUsd.getRate().multiply(fromUsd.getRate());
         return amount.multiply(calculatedRate);

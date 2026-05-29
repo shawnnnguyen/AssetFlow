@@ -112,6 +112,7 @@ public class MarketDataService {
         if(profile == null) return EntityStatus.NOT_FOUND;
 
         Currency stockNativeCurrency = currencyRepository.findByCode(profile.currencyCode());
+        if (stockNativeCurrency == null) return EntityStatus.NOT_FOUND;
 
         Asset asset = assetRepository.findByTicker(ticker)
                 .orElseGet(() -> {

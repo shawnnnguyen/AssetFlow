@@ -30,11 +30,6 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", e.getReason() != null ? e.getReason() : e.getMessage()));
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-    }
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException e) {
         log.warn("Data integrity violation: {}", e.getMessage());
