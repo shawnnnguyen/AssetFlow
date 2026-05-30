@@ -2,9 +2,11 @@ package com.project3.AssetFlow.identity;
 
 import com.project3.AssetFlow.identity.dto.AuthResponse;
 import com.project3.AssetFlow.identity.dto.LoginRequest;
+import com.project3.AssetFlow.identity.dto.RefreshRequest;
 import com.project3.AssetFlow.identity.dto.RegisterRequest;
 import com.project3.AssetFlow.identity.securityConfig.JwtService;
 import com.project3.AssetFlow.identity.securityConfig.UserPrincipal;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -25,7 +27,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
-        // Fast-path check; DB unique constraints are the correctness guarantee
         if (userRepo.existsByUsername(request.username()) || userRepo.existsByEmail(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username or email already exists");
         }
@@ -58,5 +59,20 @@ public class AuthService {
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         String jwtToken = jwtService.generateToken(principal.getUsername());
         return new AuthResponse(jwtToken, principal.getUsername(), principal.getRole(), principal.getId());
+    }
+
+    public AuthResponse refresh(RefreshRequest request) {
+        String username;
+        try {
+            username = jwtService.extractUsername(request.token());
+        } catch (JwtException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
+        }
+
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token"));
+
+        String newToken = jwtService.generateToken(user.getUsername());
+        return new AuthResponse(newToken, user.getUsername(), user.getRole().name(), user.getId());
     }
 }

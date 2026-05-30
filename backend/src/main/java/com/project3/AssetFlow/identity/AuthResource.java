@@ -2,6 +2,7 @@ package com.project3.AssetFlow.identity;
 
 import com.project3.AssetFlow.identity.dto.AuthResponse;
 import com.project3.AssetFlow.identity.dto.LoginRequest;
+import com.project3.AssetFlow.identity.dto.RefreshRequest;
 import com.project3.AssetFlow.identity.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -26,5 +27,10 @@ public class AuthResource {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }
