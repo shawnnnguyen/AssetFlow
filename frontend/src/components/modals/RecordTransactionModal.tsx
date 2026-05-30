@@ -14,13 +14,25 @@ export default function RecordTransactionModal({ onClose, onSuccess }: RecordTra
   const [quantity, setQty]    = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [errors, setErrors]   = useState<{ [k: string]: string }>({});
+
+  function clearFieldError(field: string) {
+    if (!errors[field]) return;
+    setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const errs: { [k: string]: string } = {};
+    if (!ticker.trim()) errs['ticker'] = 'Ticker is required';
+    const qty = parseFloat(quantity);
+    if (!quantity.trim() || !Number.isFinite(qty) || qty <= 0) errs['quantity'] = 'Must be greater than 0';
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
     setError('');
     setLoading(true);
     try {
-      await onSuccess({ transactionType: type, ticker: ticker.trim().toUpperCase(), quantity: parseFloat(quantity) });
+      await onSuccess({ transactionType: type, ticker: ticker.trim().toUpperCase(), quantity: qty });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transaction failed');
@@ -52,22 +64,23 @@ export default function RecordTransactionModal({ onClose, onSuccess }: RecordTra
             <input
               type="text"
               value={ticker}
-              onChange={e => setTicker(e.target.value)}
+              onChange={e => { setTicker(e.target.value); clearFieldError('ticker'); }}
               placeholder="e.g. AAPL"
-              required
+              className={errors['ticker'] ? 'invalid' : undefined}
             />
+            {errors['ticker'] && <span className="field-error">{errors['ticker']}</span>}
           </div>
           <div className="modal-field">
             <label>Quantity</label>
             <input
               type="number"
               step="0.0001"
-              min="0.0001"
               value={quantity}
-              onChange={e => setQty(e.target.value)}
+              onChange={e => { setQty(e.target.value); clearFieldError('quantity'); }}
               placeholder="0"
-              required
+              className={errors['quantity'] ? 'invalid' : undefined}
             />
+            {errors['quantity'] && <span className="field-error">{errors['quantity']}</span>}
           </div>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={onClose}>Cancel</button>

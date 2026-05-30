@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
 import type { Portfolio } from '../types';
 
 export function usePortfolios(userId: string | null) {
+  const { addToast } = useToast();
   const [portfolios, setPortfolios]                 = useState<Portfolio[]>([]);
   const [currentPortfolioId, setCurrentPortfolioId] = useState<number | null>(null);
   const currentPortfolioIdRef = useRef<number | null>(null);
@@ -27,7 +29,7 @@ export function usePortfolios(userId: string | null) {
         const first = pfs[0];
         if (first !== undefined) setPortfolioId(first.id);
       })
-      .catch(console.error);
+      .catch(e => { console.error(e); addToast('Could not load portfolios'); });
     return () => { stale = true; };
   }, [userId]);
 
@@ -40,6 +42,7 @@ export function usePortfolios(userId: string | null) {
       setPortfolios(prev => prev.map(p => p.id === fresh.id ? { ...p, ...fresh } : p));
     } catch (e) {
       console.error(e);
+      addToast('Could not refresh portfolio');
     }
   }
 

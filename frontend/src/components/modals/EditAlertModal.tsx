@@ -14,14 +14,16 @@ export default function EditAlertModal({ alert, onClose, onUpdated }: EditAlertM
   const [targetPrice, setTargetPrice] = useState(String(alert.targetPrice ?? ''));
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState('');
+  const [fieldError, setFieldError]   = useState('');
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const parsed = parseFloat(targetPrice);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      setError('Enter a valid price greater than 0');
+    if (!targetPrice.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+      setFieldError('Must be greater than 0');
       return;
     }
+    setFieldError('');
     setError('');
     setSaving(true);
     try {
@@ -51,11 +53,11 @@ export default function EditAlertModal({ alert, onClose, onUpdated }: EditAlertM
             <input
               type="number"
               step="0.01"
-              min="0.01"
               value={targetPrice}
-              onChange={e => setTargetPrice(e.target.value)}
-              required
+              onChange={e => { setTargetPrice(e.target.value); if (fieldError) setFieldError(''); }}
+              className={fieldError ? 'invalid' : undefined}
             />
+            {fieldError && <span className="field-error">{fieldError}</span>}
           </div>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={onClose}>Cancel</button>

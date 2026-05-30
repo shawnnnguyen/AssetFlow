@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { MutableRefObject } from 'react';
 import { api } from '../api';
 import { usePortfolioWebSocket } from './usePortfolioWebSocket';
+import { useToast } from '../context/ToastContext';
 import type {
   Holding,
   HoldingPerf,
@@ -39,6 +40,7 @@ export function useHoldings(
   fetchCompanyProfiles: (tickers: string[]) => void,
   onCashBalanceUpdate: (portfolioId: number, cashBalance: number) => void,
 ) {
+  const { addToast } = useToast();
   const [enrichedHoldings, setEnrichedHoldings] = useState<DisplayHolding[]>([]);
   const [performance, setPerformance]           = useState<PortfolioPerf | null>(null);
   const [performanceMap, setPerformanceMap]     = useState<Partial<Record<number, PortfolioPerf>>>({});
@@ -66,7 +68,7 @@ export function useHoldings(
       const enriched = buildEnrichedHoldings(rawHoldings, perf, trackedMap);
       setEnrichedHoldings(enriched);
       fetchCompanyProfiles(enriched.map(h => h.ticker));
-    }).catch(console.error);
+    }).catch(e => { console.error(e); addToast('Could not load holdings'); });
     return () => { stale = true; };
   }, [portfolioId]);
 
@@ -95,17 +97,22 @@ export function useHoldings(
   async function refetch() {
     if (!portfolioId) return;
     const capturedId = portfolioId;
-    const [perf, rawHoldings] = await Promise.all([
-      api.portfolios.getPerformance(capturedId),
-      api.holdings.getAll(capturedId),
-    ]);
-    if (currentPortfolioIdRef.current !== capturedId) return;
-    const trackedMap = trackedStocksRef.current;
-    setPerformance(perf);
-    setPerformanceMap(prev => ({ ...prev, [capturedId]: perf }));
-    const enriched = buildEnrichedHoldings(rawHoldings, perf, trackedMap);
-    setEnrichedHoldings(enriched);
-    fetchCompanyProfiles(enriched.map(h => h.ticker));
+    try {
+      const [perf, rawHoldings] = await Promise.all([
+        api.portfolios.getPerformance(capturedId),
+        api.holdings.getAll(capturedId),
+      ]);
+      if (currentPortfolioIdRef.current !== capturedId) return;
+      const trackedMap = trackedStocksRef.current;
+      setPerformance(perf);
+      setPerformanceMap(prev => ({ ...prev, [capturedId]: perf }));
+      const enriched = buildEnrichedHoldings(rawHoldings, perf, trackedMap);
+      setEnrichedHoldings(enriched);
+      fetchCompanyProfiles(enriched.map(h => h.ticker));
+    } catch (e) {
+      console.error(e);
+      addToast('Could not refresh holdings');
+    }
   }
 
   return { enrichedHoldings, performance, performanceMap, refetch };

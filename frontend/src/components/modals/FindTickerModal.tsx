@@ -12,8 +12,9 @@ export default function FindTickerModal({ onClose }: FindTickerModalProps) {
   const [query, setQuery]     = useState('');
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [tracked, setTracked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const [error, setError]       = useState('');
 
   async function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,11 +35,14 @@ export default function FindTickerModal({ onClose }: FindTickerModalProps) {
 
   async function handleTrack() {
     if (!profile) return;
+    setTracking(true);
     try {
       await api.market.addTracking(profile.ticker);
       setTracked(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to track ticker');
+    } finally {
+      setTracking(false);
     }
   }
 
@@ -70,8 +74,8 @@ export default function FindTickerModal({ onClose }: FindTickerModalProps) {
           <div style={{ marginTop: 20, padding: '16px', border: '1px solid var(--rule)', borderRadius: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
               <span className="sym">{profile.ticker}</span>
-              <button className="btn" onClick={() => { void handleTrack(); }} disabled={tracked}>
-                {tracked ? '✓ Tracked' : <><PlusIcon size={13} /> Track</>}
+              <button className="btn" onClick={() => { void handleTrack(); }} disabled={tracked || tracking}>
+                {tracking ? '…' : tracked ? '✓ Tracked' : <><PlusIcon size={13} /> Track</>}
               </button>
             </div>
             <div style={{ fontSize: '13px', color: 'var(--ink-2)', marginBottom: 4 }}>{profile.name}</div>

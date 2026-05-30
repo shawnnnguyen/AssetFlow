@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { MutableRefObject } from 'react';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
 import type { Transaction, DisplayTransaction, TrackedStockMap } from '../types';
 
 function normalizeTx(tx: Transaction, trackedMap: TrackedStockMap): DisplayTransaction {
@@ -17,6 +18,7 @@ export function useTransactions(
   portfolioId: number | null,
   trackedStocksRef: MutableRefObject<TrackedStockMap>,
 ) {
+  const { addToast } = useToast();
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [txRefreshKey, setTxRefreshKey] = useState(0);
 
@@ -32,7 +34,7 @@ export function useTransactions(
         const trackedMap = trackedStocksRef.current;
         setTransactions((res.content ?? []).map(tx => normalizeTx(tx, trackedMap)));
       })
-      .catch(console.error);
+      .catch(e => { console.error(e); addToast('Could not load transactions'); });
     return () => { stale = true; };
   }, [portfolioId, txRefreshKey]);
 

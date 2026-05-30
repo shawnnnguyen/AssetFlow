@@ -5,6 +5,7 @@ import SockJS from 'sockjs-client';
 import { parseMessage } from '../lib/parseMessage';
 import type { MarketUpdate } from '../types';
 import { BACKEND_URL } from '../config';
+import { useToast } from '../context/ToastContext';
 
 interface UseMarketWebSocketReturn {
   lastPrice: MarketUpdate | null;
@@ -16,9 +17,12 @@ export function useMarketWebSocket(token: string | null): UseMarketWebSocketRetu
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
   const subRef    = useRef<StompSubscription | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled         = false;
+    let everConnected     = false;
+    let toastedDisconnect = false;
 
     const client = new Client({
       webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-market`),
@@ -26,12 +30,21 @@ export function useMarketWebSocket(token: string | null): UseMarketWebSocketRetu
       reconnectDelay: 5000,
       onConnect: () => {
         if (cancelled) return;
+        if (toastedDisconnect) { addToast('Live prices reconnected', 'info'); toastedDisconnect = false; }
+        everConnected = true;
         setConnected(true);
         subRef.current = client.subscribe('/topic/prices', msg => {
           setLastPrice(parseMessage<MarketUpdate>(msg));
         });
       },
-      onDisconnect: () => setConnected(false),
+      onWebSocketClose: () => {
+        if (cancelled) return;
+        if (everConnected && !toastedDisconnect) {
+          addToast('Live prices disconnected — reconnecting…', 'warn');
+          toastedDisconnect = true;
+        }
+        setConnected(false);
+      },
     });
     client.activate();
     clientRef.current = client;
@@ -43,7 +56,7 @@ export function useMarketWebSocket(token: string | null): UseMarketWebSocketRetu
       subRef.current = null;
       void client.deactivate();
     };
-  }, [token]);
+  }, [token, addToast]);
 
   return { lastPrice, connected };
 }
