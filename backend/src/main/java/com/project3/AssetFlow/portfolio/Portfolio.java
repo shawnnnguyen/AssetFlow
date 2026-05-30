@@ -11,7 +11,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name="portfolios")
+@Table(name = "portfolios", indexes = {
+    @Index(name = "idx_portfolio_user", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

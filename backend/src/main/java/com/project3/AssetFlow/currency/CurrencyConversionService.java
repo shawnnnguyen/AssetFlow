@@ -40,7 +40,7 @@ public class CurrencyConversionService {
         ExchangeRate toUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), "USD");
         ExchangeRate fromUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode("USD", toCurrency.toUpperCase());
         if (toUsd == null || fromUsd == null) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "No exchange rate path found for " + fromCurrency + " to " + toCurrency);
         }
         BigDecimal calculatedRate = toUsd.getRate().multiply(fromUsd.getRate());

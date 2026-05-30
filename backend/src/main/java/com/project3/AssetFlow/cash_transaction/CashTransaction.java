@@ -11,7 +11,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name="cash_transactions")
+@Table(name = "cash_transactions", indexes = {
+    @Index(name = "idx_cash_txn_user",      columnList = "user_id"),
+    @Index(name = "idx_cash_txn_portfolio", columnList = "portfolio_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
