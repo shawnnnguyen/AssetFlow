@@ -85,7 +85,7 @@ public class PortfolioStreamingService {
             try {
                 Portfolio portfolio = portfolioRepository.findById(portfolioId).orElseThrow();
 
-                List<Holding> holdings = holdingRepository.findByPortfolioId(portfolioId);
+                List<Holding> holdings = holdingRepository.findByPortfolioIdWithDetails(portfolioId);
 
                 PortfolioPerformanceResponse response = portfolioService.calculatePortfolioPerformance(
                         portfolio,

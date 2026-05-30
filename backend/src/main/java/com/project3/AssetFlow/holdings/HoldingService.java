@@ -17,7 +17,7 @@ public class HoldingService {
 
     public List<HoldingResponse> getHoldingsByPortfolioId(Long portfolioId) {
 
-        return holdingRepository.findByPortfolioId(portfolioId)
+        return holdingRepository.findByPortfolioIdWithDetails(portfolioId)
                 .stream()
                 .map(holding -> new HoldingResponse(
                         holding.getId(),

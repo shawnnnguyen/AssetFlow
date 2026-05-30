@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
-    @Query("SELECT p FROM Portfolio p JOIN FETCH p.user WHERE p.user.id = :userId")
+    @Query("SELECT p FROM Portfolio p JOIN FETCH p.user JOIN FETCH p.currency WHERE p.user.id = :userId")
     List<Portfolio> findByUserId(Long userId);
 
     boolean existsByUserIdAndNameIgnoreCase(Long userId, String name);

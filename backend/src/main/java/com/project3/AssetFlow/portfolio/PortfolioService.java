@@ -166,7 +166,7 @@ public class PortfolioService {
 
     public PortfolioPerformanceResponse getPortfolioPerformance(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
-        List<Holding> rawHoldings = holdingRepository.findByPortfolioId(portfolioId);
+        List<Holding> rawHoldings = holdingRepository.findByPortfolioIdWithDetails(portfolioId);
 
         Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
                 .stream()
