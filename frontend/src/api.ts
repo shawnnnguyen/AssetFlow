@@ -17,7 +17,7 @@ import type {
   ApiSuccess,
 } from './types';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+import { BACKEND_URL } from './config';
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
 

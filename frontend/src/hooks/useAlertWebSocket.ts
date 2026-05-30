@@ -4,8 +4,7 @@ import type { StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { parseMessage } from '../lib/parseMessage';
 import type { TriggeredAlert } from '../types';
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+import { BACKEND_URL } from '../config';
 
 interface UseAlertWebSocketReturn {
   triggeredAlerts: TriggeredAlert[];

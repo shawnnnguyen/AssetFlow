@@ -60,7 +60,7 @@ public class PortfolioStreamingService {
         pendingPortfolioIds.add(event.portfolioId());
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRateString = "${app.portfolio.performance-recalc-interval-ms:1000}")
     public void processPendingPortfolios() {
         if(pendingPortfolioIds.isEmpty()) return;
 
