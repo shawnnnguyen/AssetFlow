@@ -28,15 +28,15 @@ public class Transaction {
     @Column(name="id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="portfolio_id")
     private Portfolio portfolio;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="asset_id")
     private Asset asset;
 
@@ -46,7 +46,7 @@ public class Transaction {
     @Column(name="price_per_unit")
     private BigDecimal pricePerUnit;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="currency_code", referencedColumnName = "code")
     private Currency currency;
 

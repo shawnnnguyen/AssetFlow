@@ -20,7 +20,7 @@ public class AlertTriggered {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "price_alert_id")
     private PriceAlert priceAlert;
 

@@ -28,7 +28,7 @@ public class Asset {
     @Column(name="industry")
     private String industry;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="currency_code", referencedColumnName = "code")
     private Currency currency;
 }

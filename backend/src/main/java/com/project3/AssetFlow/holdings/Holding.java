@@ -22,11 +22,11 @@ public class Holding {
     @Column(name="id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="asset_id")
     private Asset asset;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="portfolio_id")
     private Portfolio portfolio;
 
