@@ -35,6 +35,7 @@ build/
 
 ### Claude Code (local only) ###
 .claude/
+.agents/
 CLAUDE.md
 AGENTS.md
 
