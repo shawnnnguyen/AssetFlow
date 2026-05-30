@@ -23,6 +23,7 @@ export default function NewPortfolioModal({ onClose, onCreate }: NewPortfolioMod
   const [currencies, setCurrencies] = useState<Currency[]>(FALLBACK_CURRENCIES);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
+  const [nameError, setNameError]   = useState('');
 
   useEffect(() => {
     void api.currencies.getAll()
@@ -41,7 +42,8 @@ export default function NewPortfolioModal({ onClose, onCreate }: NewPortfolioMod
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) { setNameError('Portfolio name is required'); return; }
+    setNameError('');
     setError('');
     setLoading(true);
     try {
@@ -67,11 +69,18 @@ export default function NewPortfolioModal({ onClose, onCreate }: NewPortfolioMod
         <form onSubmit={handleSubmit}>
           <div className="modal-field">
             <label>Portfolio name</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Long-term" autoFocus required />
+            <input
+              value={name}
+              onChange={e => { setName(e.target.value); if (nameError) setNameError(''); }}
+              placeholder="e.g. Long-term"
+              autoFocus
+              className={nameError ? 'invalid' : undefined}
+            />
+            {nameError && <span className="field-error">{nameError}</span>}
           </div>
           <div className="modal-field">
             <label>Currency</label>
-            <select value={currencyCode} onChange={e => setCurrency(e.target.value)} required>
+            <select value={currencyCode} onChange={e => setCurrency(e.target.value)}>
               {currencies.map(c => (
                 <option key={c.code} value={c.code}>{c.code} {c.symbol}</option>
               ))}

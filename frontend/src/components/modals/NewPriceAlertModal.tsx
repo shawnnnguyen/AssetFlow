@@ -17,6 +17,7 @@ export default function NewPriceAlertModal({ trackedStocks = [], onClose, onCrea
   const [targetPrice, setTargetPrice] = useState('');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
+  const [errors, setErrors]           = useState<{ [k: string]: string }>({});
 
   useEffect(() => {
     const first = trackedStocks[0]?.ticker;
@@ -27,10 +28,16 @@ export default function NewPriceAlertModal({ trackedStocks = [], onClose, onCrea
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const price = parseFloat(targetPrice);
+    if (!targetPrice.trim() || !Number.isFinite(price) || price <= 0) {
+      setErrors({ targetPrice: 'Must be greater than 0' });
+      return;
+    }
+    setErrors({});
     setError('');
     setLoading(true);
     try {
-      const alert = await api.alerts.create({ ticker, targetPrice: parseFloat(targetPrice) });
+      const alert = await api.alerts.create({ ticker, targetPrice: price });
       onCreated?.(alert);
       onClose();
     } catch (err) {
@@ -58,7 +65,7 @@ export default function NewPriceAlertModal({ trackedStocks = [], onClose, onCrea
           <form onSubmit={handleSubmit}>
             <div className="modal-field">
               <label>Ticker</label>
-              <select value={ticker} onChange={e => setTicker(e.target.value)} required>
+              <select value={ticker} onChange={e => setTicker(e.target.value)}>
                 {tickers.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -67,12 +74,12 @@ export default function NewPriceAlertModal({ trackedStocks = [], onClose, onCrea
               <input
                 type="number"
                 step="0.01"
-                min="0.01"
                 value={targetPrice}
-                onChange={e => setTargetPrice(e.target.value)}
+                onChange={e => { setTargetPrice(e.target.value); if (errors['targetPrice']) setErrors({}); }}
                 placeholder="0.00"
-                required
+                className={errors['targetPrice'] ? 'invalid' : undefined}
               />
+              {errors['targetPrice'] && <span className="field-error">{errors['targetPrice']}</span>}
             </div>
             <div className="modal-actions">
               <button type="button" className="btn" onClick={onClose}>Cancel</button>

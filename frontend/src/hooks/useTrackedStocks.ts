@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
 import type { TrackedStock, TrackedStockMap, CompanyProfileCache, CachedProfile } from '../types';
 
 export function useTrackedStocks(userId: string | null) {
+  const { addToast } = useToast();
   const [trackedStocks, setTrackedStocks]   = useState<TrackedStock[]>([]);
   const [trackedCount, setTrackedCount]     = useState(0);
   const [companyProfiles, setCompanyProfiles] = useState<CompanyProfileCache>({});
@@ -28,7 +30,7 @@ export function useTrackedStocks(userId: string | null) {
         setTrackedCount(tracked.length);
         fetchCompanyProfiles(tracked.map(s => s.ticker));
       })
-      .catch(console.error);
+      .catch(e => { console.error(e); addToast('Could not load market data'); });
     return () => { stale = true; };
   }, [userId]);
 
@@ -78,6 +80,7 @@ export function useTrackedStocks(userId: string | null) {
       }
     } catch (e) {
       console.error('Failed to untrack', ticker, e);
+      addToast(`Could not remove ${ticker} from tracking`);
     }
   }
 

@@ -15,16 +15,23 @@ export default function CashTransactionModal({ portfolioId, onClose, onSuccess }
   const [amount, setAmount]   = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [errors, setErrors]   = useState<{ [k: string]: string }>({});
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const value = parseFloat(amount);
+    if (!amount.trim() || !Number.isFinite(value) || value <= 0) {
+      setErrors({ amount: 'Must be greater than 0' });
+      return;
+    }
+    setErrors({});
     setError('');
     setLoading(true);
     try {
       await api.cashTransactions.create(portfolioId, {
         portfolioId,
         type,
-        amount: parseFloat(amount),
+        amount: value,
       });
       onSuccess?.();
       onClose();
@@ -58,12 +65,12 @@ export default function CashTransactionModal({ portfolioId, onClose, onSuccess }
             <input
               type="number"
               step="0.01"
-              min="0.01"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => { setAmount(e.target.value); if (errors['amount']) setErrors({}); }}
               placeholder="0.00"
-              required
+              className={errors['amount'] ? 'invalid' : undefined}
             />
+            {errors['amount'] && <span className="field-error">{errors['amount']}</span>}
           </div>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={onClose}>Cancel</button>

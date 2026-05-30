@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { useToast } from '../context/ToastContext';
 import type { PriceAlert, NormalizedAlert, TrackedStockMap } from '../types';
 import type { MutableRefObject } from 'react';
 
@@ -31,6 +32,7 @@ export function useAlerts(
   userId: string | null,
   trackedStocksRef: MutableRefObject<TrackedStockMap>,
 ) {
+  const { addToast } = useToast();
   const [alerts, setAlerts] = useState<NormalizedAlert[]>([]);
 
   useEffect(() => {
@@ -42,13 +44,18 @@ export function useAlerts(
         if (stale) return;
         setAlerts(rawAlerts.map(a => normalizeAlert(a, trackedStocksRef.current)));
       })
-      .catch(console.error);
+      .catch(e => { console.error(e); addToast('Could not load alerts'); });
     return () => { stale = true; };
   }, [userId]);
 
   async function handleDeleteAlert(alertId: number) {
-    await api.alerts.remove(alertId);
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
+    try {
+      await api.alerts.remove(alertId);
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
+    } catch (e) {
+      console.error(e);
+      addToast('Could not delete alert');
+    }
   }
 
   function handleUpdateAlert(updated: NormalizedAlert) {
