@@ -34,6 +34,8 @@ services:
       - JWT_KEY=${JWT_KEY}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
+      - PROMETHEUS_SCRAPE_USERNAME=${PROMETHEUS_SCRAPE_USERNAME:-prometheus}
+      - PROMETHEUS_SCRAPE_PASSWORD=${PROMETHEUS_SCRAPE_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

@@ -169,7 +169,7 @@ body { overflow: hidden; }
 .btn .ic { width: 14px; height: 14px; }
 
 /* ── KPI cards ───────────────────────────────────────────────────── */
-.kpis { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.kpis { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
 .kpi { border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; background: var(--paper); }
 .kpi.live { border-color: var(--pos); background: var(--pos-soft); }
 .kpi .kpi-lbl {

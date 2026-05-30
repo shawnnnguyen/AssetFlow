@@ -46,7 +46,7 @@ export default function SummaryCards({
       </div>
 
       <div className="kpi">
-        <div className="kpi-lbl">Cash</div>
+        <div className="kpi-lbl">Cash balance</div>
         <div className="kpi-val">{fmt(cash, currencyCode)}</div>
       </div>
     </div>
