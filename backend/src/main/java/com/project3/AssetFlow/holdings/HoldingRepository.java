@@ -16,8 +16,6 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
     @Query("SELECT h FROM Holding h WHERE h.portfolio.id = :portfolioId AND h.asset.id = :assetId")
     Holding findByPortfolioIdAndAssetIdForUpdate(Long portfolioId, Long assetId);
 
-    List<Holding> findByPortfolioId(Long portfolioId);
-
     @Query("SELECT h FROM Holding h JOIN FETCH h.asset JOIN FETCH h.portfolio WHERE h.portfolio.id = :portfolioId")
     List<Holding> findByPortfolioIdWithDetails(@Param("portfolioId") Long portfolioId);
 

@@ -1,12 +1,16 @@
 package com.project3.AssetFlow.currency;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -16,34 +20,44 @@ public class CurrencyConversionService {
 
     private final ExchangeRateRepository exchangeRateRepository;
 
-    public BigDecimal convertCurrency(String fromCurrency, String toCurrency, BigDecimal amount) {
+    private final ConcurrentHashMap<String, BigDecimal> rateCache = new ConcurrentHashMap<>();
 
-        if (fromCurrency.equalsIgnoreCase(toCurrency)) {
+    @PostConstruct
+    @Transactional(readOnly = true)
+    @Scheduled(fixedRate = 300_000)
+    public void refreshCache() {
+        ConcurrentHashMap<String, BigDecimal> fresh = new ConcurrentHashMap<>();
+        exchangeRateRepository.findAllWithCurrencies().forEach(r ->
+                fresh.put(r.getFromCurrency().getCode() + r.getToCurrency().getCode(), r.getRate()));
+        rateCache.clear();
+        rateCache.putAll(fresh);
+    }
+
+    public BigDecimal convertCurrency(String fromCurrency, String toCurrency, BigDecimal amount) {
+        String from = fromCurrency.toUpperCase();
+        String to   = toCurrency.toUpperCase();
+
+        if (from.equals(to)) {
             return amount;
         }
 
-        ExchangeRate exchangeRate = exchangeRateRepository
-                .findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), toCurrency.toUpperCase());
-
-        if (exchangeRate != null) {
-            return amount.multiply(exchangeRate.getRate());
+        BigDecimal direct = rateCache.get(from + to);
+        if (direct != null) {
+            return amount.multiply(direct);
         }
 
-        ExchangeRate inverseRate = exchangeRateRepository
-                .findByFromCurrencyCodeAndToCurrencyCode(toCurrency.toUpperCase(), fromCurrency.toUpperCase());
-
-        if (inverseRate != null) {
-            BigDecimal calculatedRate = BigDecimal.ONE.divide(inverseRate.getRate(), EXCHANGE_RATE_SCALE, RoundingMode.HALF_UP);
-            return amount.multiply(calculatedRate);
+        BigDecimal inverse = rateCache.get(to + from);
+        if (inverse != null) {
+            BigDecimal rate = BigDecimal.ONE.divide(inverse, EXCHANGE_RATE_SCALE, RoundingMode.HALF_UP);
+            return amount.multiply(rate);
         }
 
-        ExchangeRate toUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode(fromCurrency.toUpperCase(), "USD");
-        ExchangeRate fromUsd = exchangeRateRepository.findByFromCurrencyCodeAndToCurrencyCode("USD", toCurrency.toUpperCase());
+        BigDecimal toUsd   = rateCache.get(from + "USD");
+        BigDecimal fromUsd = rateCache.get("USD" + to);
         if (toUsd == null || fromUsd == null) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "No exchange rate path found for " + fromCurrency + " to " + toCurrency);
         }
-        BigDecimal calculatedRate = toUsd.getRate().multiply(fromUsd.getRate());
-        return amount.multiply(calculatedRate);
+        return amount.multiply(toUsd.multiply(fromUsd));
     }
 }
