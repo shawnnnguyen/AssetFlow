@@ -1,6 +1,6 @@
 # Performance Report — 500 VU Peak
 
-**Date:** 2026-06-02
+**Date:** 2026-06-02 (baseline) / 2026-06-03 (post-optimization)
 **Tests:** `load-test.js` (stepped ramp, 11 min) + `spike-test.js` (sudden surge, 3.5 min)
 **Overall Result:** PASS (0% error rate on both tests) — HikariCP connection pool identified as primary bottleneck
 
@@ -63,3 +63,58 @@ The system survived the spike with 0% errors and passed both thresholds (`p95 < 
 - Root cause: 222 worker threads competing for 10 connections → severe queuing → 2.73 s p99
 
 ---
+
+## Root Cause & Fix (Baseline)
+
+Both tests converge on the same bottleneck: **HikariCP pool capped at 10 connections**.
+
+Increase the pool size in `application.properties`:
+
+```properties
+spring.datasource.hikari.maximum-pool-size=30
+spring.datasource.hikari.minimum-idle=10
+```
+
+---
+
+## Load Test — After HikariCP Optimization (pool size 10 → 50)
+
+**Date:** 2026-06-03
+**Profile:** Stepped ramp — 100 → 250 → 500 VUs over 11 minutes
+**HikariCP pool size:** 50
+
+The optimization confirmed the connection pool was the bottleneck — the pool now fully saturates at 500 VUs. However, latency thresholds still failed due to cascading resource starvation: all 50 connections are exhausted, blocking threads until the application hits the Tomcat thread ceiling at ~240 threads, at which point requests queue at the web server level.
+
+**Threshold Results**
+- `http_req_failed < 1%` — PASSED (0% error rate)
+- `http_req_duration p(95) < 500ms` — FAILED
+- `GET /portfolios p(95) < 300ms` — FAILED
+- `GET /holdings p(95) < 400ms` — FAILED
+- `GET /transactions p(95) < 400ms` — FAILED
+- `GET /price-alerts p(95) < 300ms` — FAILED
+- `POST /transactions p(95) < 500ms` — FAILED
+
+**Throughput & Latency**
+- p95 latency: 1500–2000+ ms at 500 VUs (exponential growth from 250 → 500 VU stage)
+- p99 latency: 2000+ ms at peak
+- HTTP 5xx error rate: 0 req/s (requests queued rather than dropped)
+
+**CPU**
+- 31–47% at 100–250 VUs; peaked at 80% at 500 VUs (not the primary bottleneck)
+
+**JVM Heap & GC**
+- Heap usage: stable at 20–25% throughout
+- GC pause times: slightly elevated under load but manageable; memory not a bottleneck
+
+**Thread Behaviour**
+- Live threads hit a hard ceiling at ~240 at the 500 VU stage
+- All threads blocked waiting for a DB connection once the pool was exhausted
+
+**Database / Connection Pool**
+- HikariCP active connections: maxed out and flatlined at 50 (new pool ceiling)
+- PostgreSQL active connections: mirrored HikariCP at exactly 50
+- Root cause: 500 VUs exhausting 50 connections → threads block → thread pool hits 240 ceiling → requests queue at web server → exponential p95/p99 spike
+
+**Analysis**
+
+Increasing the pool from 10 → 50 shifted the bottleneck rather than eliminating it. At 500 VUs the system saturates all 50 connections and all ~240 Tomcat threads simultaneously, producing the same cascading stall pattern as before at a higher ceiling. Further gains require fewer blocking DB operations per request (read caching, query reduction) or reducing the per-request DB round-trips.
