@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class MarketDataService {
         });
     }
 
+    @Async("priceWriteExecutor")
     @Transactional
     public void processTrades(FinnHubTrade[] trades) {
         List<Price> pricesToSave = new ArrayList<>();

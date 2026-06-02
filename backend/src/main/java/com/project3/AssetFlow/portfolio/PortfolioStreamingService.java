@@ -38,7 +38,7 @@ public class PortfolioStreamingService {
 
     private final Set<Long> pendingPortfolioIds = ConcurrentHashMap.newKeySet();
 
-    @Async
+    @Async("portfolioCalcExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void handleAssetPriceUpdate(PriceUpdateEvent event) {

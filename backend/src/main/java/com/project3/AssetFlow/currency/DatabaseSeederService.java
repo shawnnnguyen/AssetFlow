@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStreamReader;
@@ -25,6 +26,7 @@ public class DatabaseSeederService {
     private final ExchangeRateRepository rateRepo;
     private static final Logger logger = LoggerFactory.getLogger(DatabaseSeederService.class);
 
+    @Async
     @Transactional
     public void seedData() {
         seedCurrencies();
