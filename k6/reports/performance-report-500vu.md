@@ -118,3 +118,47 @@ The optimization confirmed the connection pool was the bottleneck — the pool n
 **Analysis**
 
 Increasing the pool from 10 → 50 shifted the bottleneck rather than eliminating it. At 500 VUs the system saturates all 50 connections and all ~240 Tomcat threads simultaneously, producing the same cascading stall pattern as before at a higher ceiling. Further gains require fewer blocking DB operations per request (read caching, query reduction) or reducing the per-request DB round-trips.
+
+---
+
+## Spike Test — After HikariCP Optimization (pool size 10 → 50)
+
+**Date:** 2026-06-03
+**Profile:** 50 VUs baseline → surge to 500 VUs in 30 s → sustain 30 s → recover
+**HikariCP pool size:** 50
+
+The spike test confirms the architectural limits identified in the gradual load test, but highlights how rapidly those limits are hit under sudden stress. The application survived without crashing or dropping a single request, but latency exceeded the 2000 ms threshold as resource contention gridlocked the system within seconds of the spike onset.
+
+**Threshold Results**
+- `http_req_failed < 5%` — PASSED (0% error rate)
+- `http_req_duration p(95) < 2000ms` — FAILED (peaked at 2500+ ms)
+
+**Throughput & Latency**
+- p95 latency: 2500+ ms at peak (exceeded 2000 ms threshold)
+- HTTP 5xx error rate: 0 req/s (all requests queued and eventually processed)
+
+**CPU**
+- ~36% during baseline; jumped to 80% at spike onset; peaked at 86.0% during max load
+- Dropped back to <2% immediately after test concluded
+
+**JVM Heap & GC**
+- Heap usage: stable at ~11.8% throughout
+- GC pause time: minor bump to ~40 ms during spike; recovered quickly; memory not a bottleneck
+
+**Thread Behaviour**
+- Baseline: 60 live threads
+- At spike onset (02:00:00): jumped to 191 threads within seconds
+- By 02:00:10: hit hard ceiling of 240 threads — maxed out for the entire spike duration
+- Recovery at 02:03:20: thread count returned to 59 once load dropped back to 50 VUs
+
+**Database / Connection Pool**
+- HikariCP active connections: instantly maxed out and flatlined at 50 during the spike
+- PostgreSQL active connections: mirrored HikariCP, saturated for the full spike duration
+
+**Analysis**
+
+The spike test confirms the same cascading failure pattern observed in the load test, compressed into 10 seconds:
+- 500 VUs immediately exhausted all 50 HikariCP connections
+- Blocked threads forced the web server to spawn new threads until the 240-thread ceiling was hit within 10 seconds of spike onset
+- With threads maxed and all connections locked, requests piled up in the web server queue → p95 beyond 2.5 s
+- No crashes, no OOM errors, no dropped requests — the system gridlocked gracefully and fully recovered once load returned to 50 VUs
