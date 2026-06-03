@@ -45,8 +45,8 @@ spring.jpa.open-in-view=false
 
 OSIV holds a DB connection for the full request lifecycle including JSON serialization. May be the single largest win. Safe only after 1.1 eliminates the remaining lazy fetches.
 
-- [ ] Set `spring.jpa.open-in-view=false`
-- [ ] Verify no `LazyInitializationException` on all endpoints
+- [x] Set `spring.jpa.open-in-view=false`
+- [x] Verify no `LazyInitializationException` on all endpoints
 
 ### 1.3 — Add `@Transactional(readOnly = true)` to read service methods
 
@@ -70,8 +70,8 @@ Check that indexes exist on every FK/filter column hit by hot queries:
 
 Missing indexes → seq scans → longer connection hold time → amplifies everything else.
 
-- [ ] Audit schema / migration scripts for missing indexes
-- [ ] Add any missing indexes
+- [x] Audit schema / migration scripts for missing indexes
+- [x] Add any missing indexes
 
 ---
 
@@ -180,3 +180,6 @@ If all phases are complete and thresholds still fail, the remaining bottleneck i
 |---|---|---|---|
 | 2026-06-03 | — | Planned | Initial plan drafted from load + spike test analysis |
 | 2026-06-03 | 1.1 | Done | Added `findByIdWithDetails` (JOIN FETCH user + currency); updated `getVerifiedPortfolio` to use it — eliminates 2 extra round-trips per call |
+| 2026-06-03 | 1.2 | Done | Set `open-in-view=false`; added `@Transactional(readOnly=true)` to all read methods in Portfolio/Transaction/CashTransaction/HoldingService; fixed `findByTickerAndPortfolioId` to JOIN FETCH asset+portfolio |
+| 2026-06-03 | 1.3 | Done | Covered during 1.2 — all read service methods annotated `@Transactional(readOnly=true)` |
+| 2026-06-03 | 1.4 | Done | Added composite `(portfolio_id, asset_id)` index to `transactions`; added composite `(asset_id, enabled)` index to `price_alerts` via `@Index` annotations |
