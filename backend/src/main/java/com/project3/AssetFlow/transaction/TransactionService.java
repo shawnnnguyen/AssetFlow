@@ -97,12 +97,14 @@ public class TransactionService {
         return mapToTransactionResponse(newTransaction);
     }
 
+    @Transactional(readOnly = true)
     public Page<TransactionResponse> getPortfolioTradingHistory(Long userId, Long portfolioId, Pageable pageable) {
         verifyPortfolioOwnership(userId, portfolioId);
         return transactionRepository.findByPortfolioId(portfolioId, pageable)
                 .map(this::mapToTransactionResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<TransactionResponse> getTradingHistoryForAsset(Long userId, Long portfolioId,
                                                                String ticker, Pageable pageable) {
         verifyPortfolioOwnership(userId, portfolioId);
@@ -112,6 +114,7 @@ public class TransactionService {
                 .map(this::mapToTransactionResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<TransactionResponse> getFullTradingsHistory(Long userId, String ticker, Pageable pageable) {
         Long assetId = null;
         if (StringUtils.hasText(ticker)) {
@@ -123,6 +126,7 @@ public class TransactionService {
                 .map(this::mapToTransactionResponse);
     }
 
+    @Transactional(readOnly = true)
     public TransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
         verifyPortfolioOwnership(userId, portfolioId);
         Transaction transaction = transactionRepository.findById(transactionId)
