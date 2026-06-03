@@ -1,6 +1,13 @@
 # AssetFlow — Portfolio & Asset Management Platform
 
 Welcome to AssetFlow, a full-stack portfolio management platform that lets you track holdings, record trades, monitor live market prices, and receive real-time price alerts — all in one dashboard.
+Demo: https://assetflows.cc
+
+---
+
+## Schema design 
+
+<img width="1216" height="683" alt="assetflow" src="https://github.com/user-attachments/assets/87381cae-19af-4053-bd07-687a75e18c4b" />
 
 ---
 
