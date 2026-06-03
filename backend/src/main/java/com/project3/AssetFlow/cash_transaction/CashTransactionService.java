@@ -33,13 +33,17 @@ public class CashTransactionService {
     })
     @Transactional
     public CashTransactionResponse recordCashTransaction(Long userId, CashTransactionRequest request) {
-
-        Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
+        // Pre-lock ownership check — no lock held yet
+        Portfolio portfolioSnapshot = portfolioRepository.findByIdWithDetails(request.portfolioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
 
-        if (!portfolio.getUser().getId().equals(userId)) {
+        if (!portfolioSnapshot.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Portfolio does not belong to the current user");
         }
+
+        // Locked section — only cash balance reads/writes happen here
+        Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
 
         BigDecimal cashBalance = portfolio.getCashBalance();
 
@@ -58,7 +62,7 @@ public class CashTransactionService {
         }
 
         CashTransaction newTransaction = new CashTransaction();
-        newTransaction.setUser(portfolio.getUser());
+        newTransaction.setUser(portfolioSnapshot.getUser());
         newTransaction.setPortfolio(portfolio);
         newTransaction.setType(request.type());
         newTransaction.setAmount(request.amount());

@@ -40,24 +40,34 @@ public class TransactionService {
     })
     @Transactional
     public TransactionResponse recordTransaction(Long userId, TransactionRequest request) {
+        // Pre-lock reads: resolve all inputs and validate before acquiring any locks
         Asset asset = assetRepository.findById(request.assetId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
 
-        Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
+        Portfolio portfolioSnapshot = portfolioRepository.findByIdWithDetails(request.portfolioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
-        verifyOwnership(portfolio, userId);
+        verifyOwnership(portfolioSnapshot, userId);
+
+        // Touch lazy associations before any lock is held
+        String assetCurrencyCode = asset.getCurrency().getCode();
+        String portfolioCurrencyCode = portfolioSnapshot.getCurrency().getCode();
 
         Price executedPrice = priceRepository.findPriceAsOf(request.assetId(), request.executedAt())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                         "No price data found for asset " + request.assetId() + " at the requested time"));
 
-        BigDecimal cashBalance = portfolio.getCashBalance();
+        BigDecimal transactionValue = request.quantity().multiply(executedPrice.getPrice());
+        BigDecimal transactionValueInPortfolioCurrency = currencyConversionService.convertCurrency(
+                assetCurrencyCode, portfolioCurrencyCode, transactionValue);
+
+        // Locked section — acquire in consistent order (portfolio → holding) to prevent deadlocks
+        Portfolio portfolio = portfolioRepository.findByIdForUpdate(request.portfolioId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
+
         Holding updatedHolding = holdingRepository.findByPortfolioIdAndAssetIdForUpdate(
                 request.portfolioId(), request.assetId());
 
-        BigDecimal transactionValue = request.quantity().multiply(executedPrice.getPrice());
-        BigDecimal transactionValueInPortfolioCurrency = currencyConversionService.convertCurrency(
-                asset.getCurrency().getCode(), portfolio.getCurrency().getCode(), transactionValue);
+        BigDecimal cashBalance = portfolio.getCashBalance();
 
         if (request.type() == TransactionType.BUY) {
             if (cashBalance.compareTo(transactionValueInPortfolioCurrency) < 0) {
@@ -92,7 +102,7 @@ public class TransactionService {
 
         Transaction newTransaction = new Transaction();
         newTransaction.setPortfolio(portfolio);
-        newTransaction.setUser(portfolio.getUser());
+        newTransaction.setUser(portfolioSnapshot.getUser());
         newTransaction.setAsset(asset);
         newTransaction.setQuantity(request.quantity());
         newTransaction.setPricePerUnit(executedPrice.getPrice());
