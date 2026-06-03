@@ -3,6 +3,7 @@ package com.project3.AssetFlow.holdings;
 import com.project3.AssetFlow.holdings.dto.HoldingResponse;
 import com.project3.AssetFlow.holdings.dto.HoldingPerformance;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ public class HoldingService {
 
     private final HoldingRepository holdingRepository;
 
+    @Cacheable(value = "holdings", key = "#portfolioId")
     public List<HoldingResponse> getHoldingsByPortfolioId(Long portfolioId) {
 
         return holdingRepository.findByPortfolioIdWithDetails(portfolioId)
@@ -30,6 +32,7 @@ public class HoldingService {
                 .toList();
     }
 
+    @Cacheable(value = "holdings", key = "#portfolioId + ':' + #ticker")
     public List<HoldingResponse> getHoldingsByTicker(String ticker, Long portfolioId) {
         return holdingRepository.findByTickerAndPortfolioId(ticker, portfolioId)
                 .stream()
