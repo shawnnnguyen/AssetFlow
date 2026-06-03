@@ -181,7 +181,7 @@ public class PortfolioService {
     }
 
     public Portfolio getVerifiedPortfolio(Long userId, Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+        Portfolio portfolio = portfolioRepository.findByIdWithDetails(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
 
         if (!portfolio.getUser().getId().equals(userId)) {
