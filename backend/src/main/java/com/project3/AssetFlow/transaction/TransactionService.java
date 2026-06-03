@@ -9,6 +9,8 @@ import com.project3.AssetFlow.portfolio.PortfolioRepository;
 import com.project3.AssetFlow.transaction.dto.TransactionRequest;
 import com.project3.AssetFlow.transaction.dto.TransactionResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,6 +33,11 @@ public class TransactionService {
     private final HoldingRepository holdingRepository;
     private final CurrencyConversionService currencyConversionService;
 
+    @Caching(evict = {
+            @CacheEvict(value = "holdings",   key = "#request.portfolioId"),
+            @CacheEvict(value = "portfolio",  key = "#userId + ':' + #request.portfolioId"),
+            @CacheEvict(value = "portfolios", key = "#userId")
+    })
     @Transactional
     public TransactionResponse recordTransaction(Long userId, TransactionRequest request) {
         Asset asset = assetRepository.findById(request.assetId())

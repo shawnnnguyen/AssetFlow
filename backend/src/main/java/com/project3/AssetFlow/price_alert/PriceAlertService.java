@@ -8,6 +8,8 @@ import com.project3.AssetFlow.price_alert.dto.AlertResponse;
 import com.project3.AssetFlow.price_alert.dto.CreateAlertRequest;
 import com.project3.AssetFlow.price_alert.dto.UpdateAlertRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class PriceAlertService {
     private final UserRepository userRepository;
     private final AssetRepository assetRepository;
 
+    @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
     public AlertResponse createAlert(Long userId, CreateAlertRequest request) {
         Asset asset = assetRepository.findByTicker(request.ticker())
@@ -40,6 +43,7 @@ public class PriceAlertService {
         return mapToResponse(alert);
     }
 
+    @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
     public AlertResponse updateAlert(Long userId, Long alertId, UpdateAlertRequest request) {
         PriceAlert alert = priceAlertRepository.findById(alertId)
@@ -55,6 +59,7 @@ public class PriceAlertService {
         return mapToResponse(alert);
     }
 
+    @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
     public void deleteAlert(Long userId, Long alertId) {
         PriceAlert alert = priceAlertRepository.findById(alertId)
@@ -68,6 +73,7 @@ public class PriceAlertService {
         alert.setEnabled(false);
     }
 
+    @Cacheable(value = "alerts", key = "#userId")
     @Transactional(readOnly = true)
     public List<AlertResponse> getAllAlerts(Long userId) {
         return priceAlertRepository.findEnabledByUserId(userId).stream()

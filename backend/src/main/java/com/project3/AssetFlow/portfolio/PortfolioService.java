@@ -12,6 +12,9 @@ import com.project3.AssetFlow.identity.UserRepository;
 import com.project3.AssetFlow.market.MarketDataService;
 import com.project3.AssetFlow.market.dto.TrackedStocksDTO;
 import com.project3.AssetFlow.portfolio.dto.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,7 @@ public class PortfolioService {
     private final CurrencyConversionService currencyConversionService;
     private final CurrencyRepository currencyRepository;
 
+    @Cacheable(value = "portfolios", key = "#userId")
     @Transactional(readOnly = true)
     public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
         return portfolioRepository.findByUserId(userId).stream()
@@ -44,11 +48,13 @@ public class PortfolioService {
                 .toList();
     }
 
+    @Cacheable(value = "portfolio", key = "#userId + ':' + #portfolioId")
     @Transactional(readOnly = true)
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         return mapToPortfolioResponse(getVerifiedPortfolio(userId, portfolioId));
     }
 
+    @CacheEvict(value = "portfolios", key = "#userId")
     @Transactional
     public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
         if (portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name())) {
@@ -74,6 +80,10 @@ public class PortfolioService {
         return mapToNewPortfolioResponse(savedPortfolio);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "portfolios", key = "#userId"),
+            @CacheEvict(value = "portfolio",  key = "#userId + ':' + #portfolioId")
+    })
     @Transactional
     public PortfolioResponse updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
                                                      Long userId,
@@ -107,6 +117,10 @@ public class PortfolioService {
         return mapToPortfolioResponse(portfolio);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "portfolios", key = "#userId"),
+            @CacheEvict(value = "portfolio",  key = "#userId + ':' + #portfolioId")
+    })
     @Transactional
     public PortfolioResponse closePortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);

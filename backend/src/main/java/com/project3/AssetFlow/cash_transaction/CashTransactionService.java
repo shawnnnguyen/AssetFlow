@@ -6,6 +6,8 @@ import com.project3.AssetFlow.portfolio.Portfolio;
 import com.project3.AssetFlow.portfolio.PortfolioRepository;
 import com.project3.AssetFlow.streaming.events.PortfolioCashChangedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,10 @@ public class CashTransactionService {
     private final PortfolioRepository portfolioRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Caching(evict = {
+            @CacheEvict(value = "portfolio",  key = "#userId + ':' + #request.portfolioId"),
+            @CacheEvict(value = "portfolios", key = "#userId")
+    })
     @Transactional
     public CashTransactionResponse recordCashTransaction(Long userId, CashTransactionRequest request) {
 
