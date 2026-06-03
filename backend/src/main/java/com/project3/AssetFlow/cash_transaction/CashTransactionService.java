@@ -65,11 +65,13 @@ public class CashTransactionService {
         return mapToTransactionResponse(newTransaction);
     }
 
+    @Transactional(readOnly = true)
     public Page<CashTransactionResponse> getAllCashTransactions(Long userId, Pageable pageable) {
         return cashTransactionRepository.findByUserId(userId, pageable)
                 .map(this::mapToTransactionResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<CashTransactionResponse> getTransactionsByPortfolio(Long userId, Long portfolioId, Pageable pageable) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
@@ -80,6 +82,7 @@ public class CashTransactionService {
                 .map(this::mapToTransactionResponse);
     }
 
+    @Transactional(readOnly = true)
     public CashTransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
         CashTransaction transaction = cashTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));

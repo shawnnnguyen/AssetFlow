@@ -37,12 +37,14 @@ public class PortfolioService {
     private final CurrencyConversionService currencyConversionService;
     private final CurrencyRepository currencyRepository;
 
+    @Transactional(readOnly = true)
     public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
         return portfolioRepository.findByUserId(userId).stream()
                 .map(this::mapToPortfolioResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
         return mapToPortfolioResponse(getVerifiedPortfolio(userId, portfolioId));
     }
@@ -164,6 +166,7 @@ public class PortfolioService {
         );
     }
 
+    @Transactional(readOnly = true)
     public PortfolioPerformanceResponse getPortfolioPerformance(Long userId, Long portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         List<Holding> rawHoldings = holdingRepository.findByPortfolioIdWithDetails(portfolioId);
@@ -183,7 +186,6 @@ public class PortfolioService {
     public Portfolio getVerifiedPortfolio(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdWithDetails(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
-
         if (!portfolio.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Portfolio does not belong to the user");
         }
