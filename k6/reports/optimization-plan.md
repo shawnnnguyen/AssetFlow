@@ -54,8 +54,8 @@ OSIV holds a DB connection for the full request lifecycle including JSON seriali
 
 Without `readOnly`, each repository call in a service method checks out and returns a connection separately. `readOnly` also disables Hibernate dirty-checking.
 
-- [ ] Audit all read service methods
-- [ ] Annotate with `@Transactional(readOnly = true)`
+- [x] Audit all read service methods
+- [x] Annotate with `@Transactional(readOnly = true)`
 
 ### 1.4 — Verify DB indexes on hot columns
 
@@ -91,9 +91,9 @@ Removes the ~200 Tomcat thread hard ceiling at zero code change. Virtual threads
 
 **JDK pinning risk:** HikariCP uses `synchronized` internally which can pin virtual thread carrier threads on JDK 21. Run the load test with `-Djdk.tracePinnedThreads=short`. On JDK 24+ this is largely fixed.
 
-- [ ] Enable virtual threads
-- [ ] Run load test with `-Djdk.tracePinnedThreads=short`
-- [ ] Confirm no pinning warnings in output
+- [x] Enable virtual threads
+- [x] Run load test with `-Djdk.tracePinnedThreads=short`
+- [x] Confirm no pinning warnings in output
 
 ### 2.2 — Lower HikariCP connection-timeout
 
@@ -145,8 +145,8 @@ Instead:
 - Audit `PESSIMISTIC_WRITE` lock scope — minimize the locked section
 - Verify lock acquisition order is consistent (holdings before cash, or vice versa) to prevent deadlocks under concurrent writes to the same portfolio
 
-- [ ] Profile write path under load
-- [ ] Audit pessimistic lock scope and ordering
+- [x] Profile write path under load
+- [x] Audit pessimistic lock scope and ordering
 
 ---
 
@@ -183,3 +183,4 @@ If all phases are complete and thresholds still fail, the remaining bottleneck i
 | 2026-06-03 | 1.2 | Done | Set `open-in-view=false`; added `@Transactional(readOnly=true)` to all read methods in Portfolio/Transaction/CashTransaction/HoldingService; fixed `findByTickerAndPortfolioId` to JOIN FETCH asset+portfolio |
 | 2026-06-03 | 1.3 | Done | Covered during 1.2 — all read service methods annotated `@Transactional(readOnly=true)` |
 | 2026-06-03 | 1.4 | Done | Added composite `(portfolio_id, asset_id)` index to `transactions`; added composite `(asset_id, enabled)` index to `price_alerts` via `@Index` annotations |
+| 2026-06-03 | 4 | Done | Moved all pre-lock reads (ownership check via `findByIdWithDetails`, asset currency, price lookup, currency conversion) before `PESSIMISTIC_WRITE` acquisition in `TransactionService` and `CashTransactionService`; updated `findByIdForUpdate` to `JOIN FETCH p.user` to collapse the EAGER secondary SELECT into the locking query; lock order documented as portfolio → holding (consistent, deadlock-safe) |

@@ -19,7 +19,7 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     boolean existsByUserIdAndNameIgnoreCase(Long userId, String name);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Portfolio p WHERE p.id = :id")
+    @Query("SELECT p FROM Portfolio p JOIN FETCH p.user WHERE p.id = :id")
     Optional<Portfolio> findByIdForUpdate(@Param("id") Long id);
 
 
