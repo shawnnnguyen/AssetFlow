@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import DataTable from './shared/DataTable';
 import { XIcon } from './shared/Icons';
 import type { TrackedStock, CompanyProfileCache, TableColumn } from '../types';
@@ -14,14 +14,13 @@ type MarketRow = TrackedStock & { id: number };
 
 interface MarketRowProps {
   s: MarketRow;
-  livePrices: Map<string, number>;
+  livePrice: number | null;
   companyProfiles: CompanyProfileCache;
   onRemove?: ((ticker: string) => void) | undefined;
 }
 
-function MarketRowComponent({ s, livePrices, companyProfiles, onRemove }: MarketRowProps) {
-  const livePrice = livePrices.get(s.ticker);
-  const price: number | null = livePrice !== undefined ? livePrice : s.latestPrice;
+const MarketRowComponent = memo(function MarketRowComponent({ s, livePrice, companyProfiles, onRemove }: MarketRowProps) {
+  const price: number | null = livePrice !== null ? livePrice : s.latestPrice;
 
   const prevPriceRef = useRef<number | null>(price);
   const [flash, setFlash] = useState<'' | 'flash-pos' | 'flash-neg'>('');
@@ -36,9 +35,10 @@ function MarketRowComponent({ s, livePrices, companyProfiles, onRemove }: Market
     return () => clearTimeout(t);
   }, [price]);
 
-  const flashStyle: React.CSSProperties = flash
+  const flashStyle = useMemo<React.CSSProperties>(() => flash
     ? { background: flash === 'flash-pos' ? 'var(--pos-soft)' : 'var(--neg-soft)', transition: 'background var(--dur) var(--ease)' }
-    : { transition: 'background var(--dur) var(--ease)' };
+    : { transition: 'background var(--dur) var(--ease)' },
+  [flash]);
 
   const profile = companyProfiles[s.ticker];
 
@@ -63,7 +63,7 @@ function MarketRowComponent({ s, livePrices, companyProfiles, onRemove }: Market
       </div>
     </>
   );
-}
+});
 
 interface MarketViewProps {
   trackedStocks?: TrackedStock[];
@@ -80,7 +80,10 @@ export default function MarketView({
   companyProfiles = {},
   onRemove,
 }: MarketViewProps) {
-  const rows: MarketRow[] = trackedStocks.map(s => ({ ...s, id: s.assetId }));
+  const rows: MarketRow[] = useMemo(
+    () => trackedStocks.map(s => ({ ...s, id: s.assetId })),
+    [trackedStocks],
+  );
 
   return (
     <DataTable
@@ -92,7 +95,7 @@ export default function MarketView({
       renderRow={s => (
         <MarketRowComponent
           s={s}
-          livePrices={livePrices}
+          livePrice={livePrices.get(s.ticker) ?? null}
           companyProfiles={companyProfiles}
           onRemove={onRemove}
         />

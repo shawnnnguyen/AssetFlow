@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import type { DisplayHolding } from '../../types';
 
 interface HoldingRowProps {
   holding: DisplayHolding;
-  livePrices: Map<string, number>;
+  livePrice: number;
 }
 
-export default function HoldingRow({ holding, livePrices }: HoldingRowProps) {
-  const livePrice = livePrices.get(holding.ticker) ?? holding.currentMarketPrice ?? 0;
-  const avgCost   = holding.avgCost ?? 0;
+function HoldingRow({ holding, livePrice }: HoldingRowProps) {
+  const avgCost = holding.avgCost ?? 0;
   const pnlPct    = avgCost > 0 ? ((livePrice - avgCost) / avgCost) * 100 : 0;
   const pos       = pnlPct >= 0;
 
@@ -46,3 +45,5 @@ export default function HoldingRow({ holding, livePrices }: HoldingRowProps) {
     </div>
   );
 }
+
+export default memo(HoldingRow);
