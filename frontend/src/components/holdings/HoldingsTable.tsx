@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import DataTable from '../shared/DataTable';
 import HoldingRow from './HoldingRow';
 import type { DisplayHolding, TableColumn } from '../../types';
@@ -15,7 +16,10 @@ interface HoldingsTableProps {
 }
 
 export default function HoldingsTable({ holdings = [], livePrices, lastUpdated }: HoldingsTableProps) {
-  const rows = holdings.map(h => ({ ...h, id: h.holdingId }));
+  const rows = useMemo(
+    () => holdings.map(h => ({ ...h, id: h.holdingId })),
+    [holdings],
+  );
 
   return (
     <DataTable
@@ -24,7 +28,12 @@ export default function HoldingsTable({ holdings = [], livePrices, lastUpdated }
       columns={COLS}
       rows={rows}
       emptyMessage="No holdings yet. Record a transaction to get started."
-      renderRow={h => <HoldingRow holding={h} livePrices={livePrices} />}
+      renderRow={h => (
+        <HoldingRow
+          holding={h}
+          livePrice={livePrices.get(h.ticker) ?? h.currentMarketPrice ?? 0}
+        />
+      )}
     />
   );
 }

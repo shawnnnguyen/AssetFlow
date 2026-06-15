@@ -18,6 +18,7 @@ export function usePortfolioWebSocket(
   const subRef = useRef<StompSubscription | null>(null);
 
   useEffect(() => {
+    setPortfolioPerf(null);
     if (!token || !portfolioId) return;
 
     let cancelled = false;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { MutableRefObject } from 'react';
 import { api } from '../api';
 import type { Portfolio, Transaction, TrackedStockMap, CompanyProfileCache, TableColumn } from '../types';
@@ -38,33 +38,36 @@ export default function GlobalTransactionsView({
   companyProfiles,
   refreshKey,
 }: GlobalTransactionsViewProps) {
-  const [rows, setRows] = useState<RowData[]>([]);
+  const [rawTx, setRawTx] = useState<Transaction[]>([]);
 
   useEffect(() => {
     let stale = false;
     void api.transactions.getAll(100).then(page => {
       if (stale) return;
-      const pfMap: Record<number, string> = {};
-      for (const p of portfolios) pfMap[p.id] = p.name;
-
-      const mapped: RowData[] = (page.content ?? []).map((tx: Transaction) => {
-        const stock  = trackedStocksRef.current[tx.assetId];
-        const ticker = stock?.ticker ?? '—';
-        return {
-          id:            tx.transactionId,
-          date:          new Date(tx.executedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          portfolioName: pfMap[tx.portfolioId] ?? `#${tx.portfolioId}`,
-          type:          tx.type,
-          ticker,
-          companyName:   companyProfiles[ticker]?.name ?? '',
-          quantity:      tx.quantity,
-          price:         tx.pricePerUnit,
-        };
-      });
-      setRows(mapped);
+      setRawTx(page.content ?? []);
     }).catch(console.error);
     return () => { stale = true; };
   }, [refreshKey, portfolios]);
+
+  const rows = useMemo<RowData[]>(() => {
+    const pfMap: Record<number, string> = {};
+    for (const p of portfolios) pfMap[p.id] = p.name;
+    const trackedMap = trackedStocksRef.current;
+
+    return rawTx.map(tx => {
+      const ticker = trackedMap[tx.assetId]?.ticker ?? '—';
+      return {
+        id:            tx.transactionId,
+        date:          new Date(tx.executedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        portfolioName: pfMap[tx.portfolioId] ?? `#${tx.portfolioId}`,
+        type:          tx.type,
+        ticker,
+        companyName:   companyProfiles[ticker]?.name ?? '',
+        quantity:      tx.quantity,
+        price:         tx.pricePerUnit,
+      };
+    });
+  }, [rawTx, portfolios, companyProfiles]);
 
   return (
     <DataTable
