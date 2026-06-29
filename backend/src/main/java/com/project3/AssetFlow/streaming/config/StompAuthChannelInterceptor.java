@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -51,7 +52,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                 throw new MessageDeliveryException("Invalid token");
             }
 
-            Long userId = userRepository.findByUsername(username)
+            UUID userId = userRepository.findByUsername(username)
                     .orElseThrow(() -> {
                         log.warn("STOMP CONNECT rejected: user '{}' not found", username);
                         return new MessageDeliveryException("User not found");
