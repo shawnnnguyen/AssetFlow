@@ -6,8 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface AssetRepository extends JpaRepository<Asset, Long> {
+public interface AssetRepository extends JpaRepository<Asset, UUID> {
     Optional<Asset> findByTicker(String ticker);
 
     @Query("SELECT new com.project3.AssetFlow.market.dto.TrackedStocksDTO(a.id, a.ticker, p.price) " +

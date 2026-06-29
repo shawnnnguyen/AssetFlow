@@ -6,27 +6,28 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
-public interface PriceAlertRepository extends JpaRepository<PriceAlert, Long> {
+public interface PriceAlertRepository extends JpaRepository<PriceAlert, UUID> {
 
     @Query("""
-        SELECT pa FROM PriceAlert pa 
-        JOIN FETCH pa.user 
-        JOIN FETCH pa.asset 
-        WHERE pa.asset.id = :assetId 
-        AND pa.enabled = true 
+        SELECT pa FROM PriceAlert pa
+        JOIN FETCH pa.user
+        JOIN FETCH pa.asset
+        WHERE pa.asset.id = :assetId
+        AND pa.enabled = true
         AND (
             (:oldPrice <= pa.targetPrice AND :latestPrice >= pa.targetPrice)
-            OR 
+            OR
             (:oldPrice >= pa.targetPrice AND :latestPrice <= pa.targetPrice)
         )
     """)
     List<PriceAlert> findTriggeredAlerts(
-            @Param("assetId") Long assetId,
+            @Param("assetId") UUID assetId,
             @Param("oldPrice") BigDecimal oldPrice,
             @Param("latestPrice") BigDecimal latestPrice
     );
 
     @Query("SELECT pa FROM PriceAlert pa JOIN FETCH pa.asset JOIN FETCH pa.user WHERE pa.user.id = :userId AND pa.enabled = true")
-    List<PriceAlert> findEnabledByUserId(@Param("userId") Long userId);
+    List<PriceAlert> findEnabledByUserId(@Param("userId") UUID userId);
 }

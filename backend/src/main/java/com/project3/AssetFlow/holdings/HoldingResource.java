@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/portfolios/{portfolioId}/holdings")
@@ -22,7 +23,7 @@ public class HoldingResource {
     @GetMapping
     public ResponseEntity<List<HoldingResponse>> getHoldingsByPortfolioId(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @RequestParam(required = false) String ticker) {
 
         portfolioService.getVerifiedPortfolio(principal.getId(), portfolioId);

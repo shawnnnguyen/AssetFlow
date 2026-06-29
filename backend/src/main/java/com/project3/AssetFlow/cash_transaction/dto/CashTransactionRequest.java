@@ -5,10 +5,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record CashTransactionRequest(
         @NotNull
-        Long portfolioId,
+        UUID portfolioId,
 
         @NotNull
         CashTransactionType type,

@@ -4,10 +4,11 @@ import com.project3.AssetFlow.cash_transaction.CashTransactionType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record CashTransactionResponse(
-        Long transactionId,
-        Long portfolioId,
+        UUID transactionId,
+        UUID portfolioId,
         CashTransactionType type,
         BigDecimal amount,
         Instant executedAt

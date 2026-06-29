@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface CashTransactionRepository extends JpaRepository<CashTransaction, Long> {
+public interface CashTransactionRepository extends JpaRepository<CashTransaction, UUID> {
 
-    Page<CashTransaction> findByUserId(Long userId, Pageable pageable);
+    Page<CashTransaction> findByUserId(UUID userId, Pageable pageable);
 
-    Page<CashTransaction> findByPortfolioId(Long portfolioId, Pageable pageable);
+    Page<CashTransaction> findByPortfolioId(UUID portfolioId, Pageable pageable);
 }

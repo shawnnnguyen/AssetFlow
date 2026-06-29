@@ -1,4 +1,6 @@
 package com.project3.AssetFlow.streaming.events;
 
-public record PortfolioCashChangedEvent(Long portfolioId) {
+import java.util.UUID;
+
+public record PortfolioCashChangedEvent(UUID portfolioId) {
 }

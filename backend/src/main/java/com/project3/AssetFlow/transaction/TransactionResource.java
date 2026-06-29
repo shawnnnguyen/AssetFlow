@@ -16,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 public class TransactionResource {
@@ -25,7 +27,7 @@ public class TransactionResource {
     @PostMapping("/portfolios/{portfolioId}/transactions")
     public ResponseEntity<TransactionResponse> recordTransaction(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @Valid @RequestBody TransactionRequest request) {
 
         if (!portfolioId.equals(request.portfolioId())) {
@@ -40,7 +42,7 @@ public class TransactionResource {
     @GetMapping("/portfolios/{portfolioId}/transactions")
     public ResponseEntity<Page<TransactionResponse>> getPortfolioTradingHistory(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @RequestParam(required = false) String ticker,
             @PageableDefault(size = 20, sort = {"executedAt", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
 
@@ -65,8 +67,8 @@ public class TransactionResource {
     @GetMapping("/portfolios/{portfolioId}/transactions/{transactionId}")
     public ResponseEntity<TransactionResponse> getTransactionById(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
-            @PathVariable Long transactionId) {
+            @PathVariable UUID portfolioId,
+            @PathVariable UUID transactionId) {
 
         return ResponseEntity.ok(transactionService.getTransactionById(
                 principal.getId(), portfolioId, transactionId));

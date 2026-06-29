@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/price-alerts")
@@ -30,7 +31,7 @@ public class PriceAlertResource {
     @PatchMapping("/{alertId}")
     public ResponseEntity<AlertResponse> updateAlert(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long alertId,
+            @PathVariable UUID alertId,
             @Valid @RequestBody UpdateAlertRequest request) {
         return ResponseEntity.ok(priceAlertService.updateAlert(principal.getId(), alertId, request));
     }
@@ -44,7 +45,7 @@ public class PriceAlertResource {
     @DeleteMapping("/{alertId}")
     public ResponseEntity<Void> deleteAlert(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long alertId) {
+            @PathVariable UUID alertId) {
         priceAlertService.deleteAlert(principal.getId(), alertId);
         return ResponseEntity.noContent().build();
     }
