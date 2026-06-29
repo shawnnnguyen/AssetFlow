@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class TransactionService {
             @CacheEvict(value = "portfolios", key = "#userId")
     })
     @Transactional
-    public TransactionResponse recordTransaction(Long userId, TransactionRequest request) {
+    public TransactionResponse recordTransaction(UUID userId, TransactionRequest request) {
         // Pre-lock reads: resolve all inputs and validate before acquiring any locks
         Asset asset = assetRepository.findById(request.assetId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -115,14 +116,14 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getPortfolioTradingHistory(Long userId, Long portfolioId, Pageable pageable) {
+    public Page<TransactionResponse> getPortfolioTradingHistory(UUID userId, UUID portfolioId, Pageable pageable) {
         verifyPortfolioOwnership(userId, portfolioId);
         return transactionRepository.findByPortfolioId(portfolioId, pageable)
                 .map(this::mapToTransactionResponse);
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getTradingHistoryForAsset(Long userId, Long portfolioId,
+    public Page<TransactionResponse> getTradingHistoryForAsset(UUID userId, UUID portfolioId,
                                                                String ticker, Pageable pageable) {
         verifyPortfolioOwnership(userId, portfolioId);
         Asset asset = assetRepository.findByTicker(ticker)
@@ -132,8 +133,8 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponse> getFullTradingsHistory(Long userId, String ticker, Pageable pageable) {
-        Long assetId = null;
+    public Page<TransactionResponse> getFullTradingsHistory(UUID userId, String ticker, Pageable pageable) {
+        UUID assetId = null;
         if (StringUtils.hasText(ticker)) {
             assetId = assetRepository.findByTicker(ticker)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"))
@@ -144,7 +145,7 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public TransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
+    public TransactionResponse getTransactionById(UUID userId, UUID portfolioId, UUID transactionId) {
         verifyPortfolioOwnership(userId, portfolioId);
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
@@ -154,13 +155,13 @@ public class TransactionService {
         return mapToTransactionResponse(transaction);
     }
 
-    private void verifyPortfolioOwnership(Long userId, Long portfolioId) {
+    private void verifyPortfolioOwnership(UUID userId, UUID portfolioId) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
         verifyOwnership(portfolio, userId);
     }
 
-    private void verifyOwnership(Portfolio portfolio, Long userId) {
+    private void verifyOwnership(Portfolio portfolio, UUID userId) {
         if (!portfolio.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Portfolio does not belong to the user");

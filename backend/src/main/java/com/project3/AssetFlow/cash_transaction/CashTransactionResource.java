@@ -15,6 +15,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 public class CashTransactionResource {
@@ -32,7 +34,7 @@ public class CashTransactionResource {
     @GetMapping("/portfolios/{portfolioId}/cash-transactions")
     public ResponseEntity<Page<CashTransactionResponse>> getTransactionsByPortfolio(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @PageableDefault(size = 20, sort = "executedAt",
                     direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(cashTransactionService.getTransactionsByPortfolio(
@@ -42,8 +44,8 @@ public class CashTransactionResource {
     @GetMapping("/portfolios/{portfolioId}/cash-transactions/{transactionId}")
     public ResponseEntity<CashTransactionResponse> getTransactionById(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
-            @PathVariable Long transactionId) {
+            @PathVariable UUID portfolioId,
+            @PathVariable UUID transactionId) {
         return ResponseEntity.ok(cashTransactionService.getTransactionById(
                 principal.getId(), portfolioId, transactionId));
     }
@@ -51,7 +53,7 @@ public class CashTransactionResource {
     @PostMapping("/portfolios/{portfolioId}/cash-transactions")
     public ResponseEntity<CashTransactionResponse> recordTransaction(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @Valid @RequestBody CashTransactionRequest request) {
 
         if (!portfolioId.equals(request.portfolioId())) {

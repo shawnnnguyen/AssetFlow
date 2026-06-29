@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +33,7 @@ public class CashTransactionService {
             @CacheEvict(value = "portfolios", key = "#userId")
     })
     @Transactional
-    public CashTransactionResponse recordCashTransaction(Long userId, CashTransactionRequest request) {
+    public CashTransactionResponse recordCashTransaction(UUID userId, CashTransactionRequest request) {
         // Pre-lock ownership check — no lock held yet
         Portfolio portfolioSnapshot = portfolioRepository.findByIdWithDetails(request.portfolioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
@@ -76,13 +77,13 @@ public class CashTransactionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CashTransactionResponse> getAllCashTransactions(Long userId, Pageable pageable) {
+    public Page<CashTransactionResponse> getAllCashTransactions(UUID userId, Pageable pageable) {
         return cashTransactionRepository.findByUserId(userId, pageable)
                 .map(this::mapToTransactionResponse);
     }
 
     @Transactional(readOnly = true)
-    public Page<CashTransactionResponse> getTransactionsByPortfolio(Long userId, Long portfolioId, Pageable pageable) {
+    public Page<CashTransactionResponse> getTransactionsByPortfolio(UUID userId, UUID portfolioId, Pageable pageable) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
         if (!portfolio.getUser().getId().equals(userId)) {
@@ -93,7 +94,7 @@ public class CashTransactionService {
     }
 
     @Transactional(readOnly = true)
-    public CashTransactionResponse getTransactionById(Long userId, Long portfolioId, Long transactionId) {
+    public CashTransactionResponse getTransactionById(UUID userId, UUID portfolioId, UUID transactionId) {
         CashTransaction transaction = cashTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
         if (!transaction.getUser().getId().equals(userId)) {

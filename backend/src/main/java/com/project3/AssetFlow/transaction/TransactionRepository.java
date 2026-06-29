@@ -6,17 +6,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+import java.util.UUID;
 
-    Page<Transaction> findByPortfolioId(Long portfolioId, Pageable pageable);
+public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
 
-    Page<Transaction> findByAssetIdAndPortfolioId(Long assetId,
-                                                  Long portfolioId,
-                                                  Pageable pageable);
+    Page<Transaction> findByPortfolioId(UUID portfolioId, Pageable pageable);
+
+    Page<Transaction> findByAssetIdAndPortfolioId(UUID assetId, UUID portfolioId, Pageable pageable);
 
     @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND (:assetId IS NULL OR t.asset.id = :assetId)")
     Page<Transaction> searchAllTransactions(
-            @Param("userId") Long userId,
-            @Param("assetId") Long assetId,
+            @Param("userId") UUID userId,
+            @Param("assetId") UUID assetId,
             Pageable pageable);
 }

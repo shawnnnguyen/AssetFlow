@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class PriceAlertService {
 
     @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
-    public AlertResponse createAlert(Long userId, CreateAlertRequest request) {
+    public AlertResponse createAlert(UUID userId, CreateAlertRequest request) {
         Asset asset = assetRepository.findByTicker(request.ticker())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
 
@@ -45,7 +46,7 @@ public class PriceAlertService {
 
     @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
-    public AlertResponse updateAlert(Long userId, Long alertId, UpdateAlertRequest request) {
+    public AlertResponse updateAlert(UUID userId, UUID alertId, UpdateAlertRequest request) {
         PriceAlert alert = priceAlertRepository.findById(alertId)
                 .filter(PriceAlert::isEnabled)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found"));
@@ -61,7 +62,7 @@ public class PriceAlertService {
 
     @CacheEvict(value = "alerts", key = "#userId")
     @Transactional
-    public void deleteAlert(Long userId, Long alertId) {
+    public void deleteAlert(UUID userId, UUID alertId) {
         PriceAlert alert = priceAlertRepository.findById(alertId)
                 .filter(PriceAlert::isEnabled)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Alert not found"));
@@ -75,7 +76,7 @@ public class PriceAlertService {
 
     @Cacheable(value = "alerts", key = "#userId")
     @Transactional(readOnly = true)
-    public List<AlertResponse> getAllAlerts(Long userId) {
+    public List<AlertResponse> getAllAlerts(UUID userId) {
         return priceAlertRepository.findEnabledByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();

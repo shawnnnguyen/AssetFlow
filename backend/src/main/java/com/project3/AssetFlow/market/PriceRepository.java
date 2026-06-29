@@ -6,17 +6,18 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface PriceRepository extends JpaRepository<Price, Long> {
+public interface PriceRepository extends JpaRepository<Price, UUID> {
     @Query(value = """
            SELECT * FROM prices
-           WHERE asset_id = :assetId 
-           AND recorded_at <= :executedAt 
-           ORDER BY recorded_at DESC 
+           WHERE asset_id = :assetId
+           AND recorded_at <= :executedAt
+           ORDER BY recorded_at DESC
            LIMIT 1
            """, nativeQuery = true)
     Optional<Price> findPriceAsOf(
-            @Param("assetId") Long assetId,
+            @Param("assetId") UUID assetId,
             @Param("executedAt") Instant executedAt
     );
 }

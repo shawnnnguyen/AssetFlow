@@ -8,19 +8,20 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface HoldingRepository extends JpaRepository<Holding, Long> {
+public interface HoldingRepository extends JpaRepository<Holding, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT h FROM Holding h WHERE h.portfolio.id = :portfolioId AND h.asset.id = :assetId")
-    Holding findByPortfolioIdAndAssetIdForUpdate(Long portfolioId, Long assetId);
+    Holding findByPortfolioIdAndAssetIdForUpdate(UUID portfolioId, UUID assetId);
 
     @Query("SELECT h FROM Holding h JOIN FETCH h.asset JOIN FETCH h.portfolio WHERE h.portfolio.id = :portfolioId")
-    List<Holding> findByPortfolioIdWithDetails(@Param("portfolioId") Long portfolioId);
+    List<Holding> findByPortfolioIdWithDetails(@Param("portfolioId") UUID portfolioId);
 
-    List<Holding> findByAssetId(Long assetId);
+    List<Holding> findByAssetId(UUID assetId);
 
     @Query("SELECT h FROM Holding h JOIN FETCH h.asset JOIN FETCH h.portfolio WHERE h.asset.ticker = :ticker AND h.portfolio.id = :portfolioId")
-    List<Holding> findByTickerAndPortfolioId(@Param("ticker") String ticker, @Param("portfolioId") Long portfolioId);
+    List<Holding> findByTickerAndPortfolioId(@Param("ticker") String ticker, @Param("portfolioId") UUID portfolioId);
 }

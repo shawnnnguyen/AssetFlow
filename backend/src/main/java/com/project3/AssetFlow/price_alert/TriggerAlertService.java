@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -61,7 +62,7 @@ public class TriggerAlertService {
         for (AlertTriggered alert : alerts) {
             try {
                 PriceAlert alertToNotify = alert.getPriceAlert();
-                Long targetUserId = alertToNotify.getUser().getId();
+                UUID targetUserId = alertToNotify.getUser().getId();
 
                 AlertTriggeredResponse payload = new AlertTriggeredResponse(
                         alert.getId(),

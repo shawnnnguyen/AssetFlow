@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class PortfolioStreamingService {
     private final MarketDataService marketDataService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    private final Set<Long> pendingPortfolioIds = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> pendingPortfolioIds = ConcurrentHashMap.newKeySet();
 
     @Async("portfolioCalcExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -64,13 +65,13 @@ public class PortfolioStreamingService {
     public void processPendingPortfolios() {
         if(pendingPortfolioIds.isEmpty()) return;
 
-        Set<Long> portfolioToProcess = Set.copyOf(pendingPortfolioIds);
+        Set<UUID> portfolioToProcess = Set.copyOf(pendingPortfolioIds);
 
         pendingPortfolioIds.removeAll(portfolioToProcess);
 
         if(portfolioToProcess.isEmpty()) return;
 
-        Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
+        Map<UUID, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
                 .stream()
                 .filter(s -> s.latestPrice() != null)
                 .collect(Collectors.toMap(
@@ -81,7 +82,7 @@ public class PortfolioStreamingService {
 
         if (livePrices.isEmpty()) return;
 
-        for(Long portfolioId : portfolioToProcess) {
+        for(UUID portfolioId : portfolioToProcess) {
             try {
                 Portfolio portfolio = portfolioRepository.findById(portfolioId).orElseThrow();
 
@@ -96,8 +97,6 @@ public class PortfolioStreamingService {
                         String.valueOf(portfolio.getUser().getId()),
                         "/queue/portfolio/" + portfolioId,
                         response);
-
-
 
             } catch (Exception e) {
                 log.error("Error calculating portfolio performance", e);

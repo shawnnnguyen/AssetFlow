@@ -6,10 +6,11 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record TransactionRequest(
-        @NotNull Long assetId,
-        @NotNull Long portfolioId,
+        @NotNull UUID assetId,
+        @NotNull UUID portfolioId,
         @NotNull Instant executedAt,
         @NotNull @Positive BigDecimal quantity,
         @NotNull TransactionType type

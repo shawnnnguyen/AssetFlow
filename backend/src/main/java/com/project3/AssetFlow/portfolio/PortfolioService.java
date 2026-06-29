@@ -26,6 +26,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,7 +43,7 @@ public class PortfolioService {
 
     @Cacheable(value = "portfolios", key = "#userId")
     @Transactional(readOnly = true)
-    public List<PortfolioResponse> getAllPortfoliosByUserId(Long userId) {
+    public List<PortfolioResponse> getAllPortfoliosByUserId(UUID userId) {
         return portfolioRepository.findByUserId(userId).stream()
                 .map(this::mapToPortfolioResponse)
                 .toList();
@@ -50,13 +51,13 @@ public class PortfolioService {
 
     @Cacheable(value = "portfolio", key = "#userId + ':' + #portfolioId")
     @Transactional(readOnly = true)
-    public PortfolioResponse getPortfolioById(Long userId, Long portfolioId) {
+    public PortfolioResponse getPortfolioById(UUID userId, UUID portfolioId) {
         return mapToPortfolioResponse(getVerifiedPortfolio(userId, portfolioId));
     }
 
     @CacheEvict(value = "portfolios", key = "#userId")
     @Transactional
-    public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, Long userId) {
+    public NewPortfolioResponse addNewPortfolio(NewPortfolioRequest requestedPortfolio, UUID userId) {
         if (portfolioRepository.existsByUserIdAndNameIgnoreCase(userId, requestedPortfolio.name())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Portfolio with this name already exists");
         }
@@ -86,8 +87,8 @@ public class PortfolioService {
     })
     @Transactional
     public PortfolioResponse updateVerifiedPortfolio(UpdatePortfolioRequest requestedPortfolio,
-                                                     Long userId,
-                                                     Long portfolioId) {
+                                                     UUID userId,
+                                                     UUID portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         String portfolioCurrencyCode = portfolio.getCurrency().getCode();
 
@@ -122,7 +123,7 @@ public class PortfolioService {
             @CacheEvict(value = "portfolio",  key = "#userId + ':' + #portfolioId")
     })
     @Transactional
-    public PortfolioResponse closePortfolio(Long userId, Long portfolioId) {
+    public PortfolioResponse closePortfolio(UUID userId, UUID portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         portfolio.setStatus(PortfolioStatusType.CLOSED);
         portfolio.setUpdatedAt(Instant.now());
@@ -132,7 +133,7 @@ public class PortfolioService {
 
     public PortfolioPerformanceResponse calculatePortfolioPerformance(Portfolio portfolio,
                                                                       List<Holding> holdings,
-                                                                      Map<Long, BigDecimal> livePrices) {
+                                                                      Map<UUID, BigDecimal> livePrices) {
         if (holdings.isEmpty()) {
             return new PortfolioPerformanceResponse(
                     portfolio.getId(),
@@ -181,11 +182,11 @@ public class PortfolioService {
     }
 
     @Transactional(readOnly = true)
-    public PortfolioPerformanceResponse getPortfolioPerformance(Long userId, Long portfolioId) {
+    public PortfolioPerformanceResponse getPortfolioPerformance(UUID userId, UUID portfolioId) {
         Portfolio portfolio = getVerifiedPortfolio(userId, portfolioId);
         List<Holding> rawHoldings = holdingRepository.findByPortfolioIdWithDetails(portfolioId);
 
-        Map<Long, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
+        Map<UUID, BigDecimal> livePrices = marketDataService.getAllTrackedStocks()
                 .stream()
                 .filter(s -> s.latestPrice() != null)
                 .collect(Collectors.toMap(
@@ -197,7 +198,7 @@ public class PortfolioService {
         return calculatePortfolioPerformance(portfolio, rawHoldings, livePrices);
     }
 
-    public Portfolio getVerifiedPortfolio(Long userId, Long portfolioId) {
+    public Portfolio getVerifiedPortfolio(UUID userId, UUID portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdWithDetails(portfolioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio not found"));
         if (!portfolio.getUser().getId().equals(userId)) {

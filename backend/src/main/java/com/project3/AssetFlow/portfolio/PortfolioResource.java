@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/portfolios")
@@ -27,7 +28,7 @@ public class PortfolioResource {
     @GetMapping("/{portfolioId}")
     public ResponseEntity<PortfolioResponse> getPortfolioById(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId) {
+            @PathVariable UUID portfolioId) {
         return ResponseEntity.ok(portfolioService.getPortfolioById(principal.getId(), portfolioId));
     }
 
@@ -42,7 +43,7 @@ public class PortfolioResource {
     @PatchMapping("/{portfolioId}")
     public ResponseEntity<PortfolioResponse> updatePortfolio(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId,
+            @PathVariable UUID portfolioId,
             @Valid @RequestBody UpdatePortfolioRequest portfolioRequest) {
         return ResponseEntity.ok(
                 portfolioService.updateVerifiedPortfolio(portfolioRequest, principal.getId(), portfolioId));
@@ -51,14 +52,14 @@ public class PortfolioResource {
     @DeleteMapping("/{portfolioId}")
     public ResponseEntity<PortfolioResponse> closePortfolio(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId) {
+            @PathVariable UUID portfolioId) {
         return ResponseEntity.ok(portfolioService.closePortfolio(principal.getId(), portfolioId));
     }
 
     @GetMapping("/{portfolioId}/performance")
     public ResponseEntity<PortfolioPerformanceResponse> getPortfolioPerformance(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long portfolioId) {
+            @PathVariable UUID portfolioId) {
         return ResponseEntity.ok(portfolioService.getPortfolioPerformance(principal.getId(), portfolioId));
     }
 }
