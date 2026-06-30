@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -51,7 +52,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                 throw new MessageDeliveryException("Invalid token");
             }
 
-            Long userId = userRepository.findByUsername(username)
+            UUID userId = userRepository.findByUsername(username)
                     .orElseThrow(() -> {
                         log.warn("STOMP CONNECT rejected: user '{}' not found", username);
                         return new MessageDeliveryException("User not found");
@@ -75,16 +76,16 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             String destination = accessor.getDestination();
             if (destination != null && destination.startsWith("/topic/alerts/")) {
                 String pathSegment = destination.substring("/topic/alerts/".length());
-                Long subscribedUserId;
+                UUID subscribedUserId;
                 try {
-                    subscribedUserId = Long.parseLong(pathSegment);
-                } catch (NumberFormatException e) {
+                    subscribedUserId = UUID.fromString(pathSegment);
+                } catch (IllegalArgumentException e) {
                     log.warn("STOMP SUBSCRIBE rejected: invalid alert destination '{}'", destination);
                     throw new MessageDeliveryException("Invalid alert destination");
                 }
 
                 Map<String, Object> sessionAttrs = accessor.getSessionAttributes();
-                Long sessionUserId = sessionAttrs != null ? (Long) sessionAttrs.get(SESSION_USER_ID) : null;
+                UUID sessionUserId = sessionAttrs != null ? (UUID) sessionAttrs.get(SESSION_USER_ID) : null;
                 if (!subscribedUserId.equals(sessionUserId)) {
                     log.warn("STOMP SUBSCRIBE rejected: userId mismatch for destination '{}'", destination);
                     throw new MessageDeliveryException("Unauthorized: userId mismatch");
